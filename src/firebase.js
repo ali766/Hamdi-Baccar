@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 import {
   getAuth,
+  signInAnonymously,
   signInWithEmailAndPassword,
 } from "firebase/auth";
 
@@ -14,18 +15,9 @@ import { firebaseConfig } from "./firebaseConfig";
 
 const app = initializeApp(firebaseConfig);
 
-// Firestore
 export const db = getFirestore(app);
-
-// Firebase Authentication
 export const auth = getAuth(app);
 
-// Login
-export async function loginAdmin(email, password) {
-  return await signInWithEmailAndPassword(auth, email, password);
-}
-
-// بيانات المنصة
 const docRef = doc(db, "lms", "data");
 
 const DEFAULT_STATE = {
@@ -35,29 +27,51 @@ const DEFAULT_STATE = {
   adminPass: "2580",
 };
 
-export function subscribeToState(callback) {
-  return onSnapshot(
-    docRef,
-    (snap) => {
-      if (snap.exists()) {
-        const d = snap.data();
-        callback({ ...DEFAULT_STATE, ...d });
-      } else {
-        setDoc(docRef, DEFAULT_STATE)
-          .then(() => callback(DEFAULT_STATE))
-          .catch((e) =>
-            console.error("Firestore init error:", e)
-          );
+// تسجيل دخول الطالب بشكل مجهول
+async function ensureAnonymousLogin() {
+  if (!auth.currentUser) {
+    await signInAnonymously(auth);
+  }
+}
+
+// تسجيل دخول المدرّس
+export async function loginAdmin(email, password) {
+  return await signInWithEmailAndPassword(auth, email, password);
+}
+
+// تحميل بيانات المنصة
+export async function subscribeToState(callback) {
+  try {
+    await ensureAnonymousLogin();
+
+    return onSnapshot(
+      docRef,
+      (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          callback({ ...DEFAULT_STATE, ...d });
+        } else {
+          setDoc(docRef, DEFAULT_STATE)
+            .then(() => callback(DEFAULT_STATE))
+            .catch((e) =>
+              console.error("Firestore init error:", e)
+            );
+        }
+      },
+      (err) => {
+        console.error("Firestore sync error:", err);
       }
-    },
-    (err) => {
-      console.error("Firestore sync error:", err);
-    }
-  );
+    );
+  } catch (e) {
+    console.error("Firebase anonymous login error:", e);
+    throw e;
+  }
 }
 
 export async function saveField(field, value) {
   try {
+    await ensureAnonymousLogin();
+
     await setDoc(
       docRef,
       { [field]: value },
