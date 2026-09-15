@@ -1,15 +1,39 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, doc, setDoc, onSnapshot } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  onSnapshot,
+} from "firebase/firestore";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+
 import { firebaseConfig } from "./firebaseConfig";
 
 const app = initializeApp(firebaseConfig);
+
+// Firestore
 export const db = getFirestore(app);
 
-// كل بيانات المنصة (الطلاب، الدروس، التقدم، كلمة سر المدرّس) متخزنة في مستند واحد
-// عشان يبقى فيه تزامن لحظي بين كل الأجهزة اللي فاتحة الموقع
+// Authentication
+export const auth = getAuth(app);
+
+// تسجيل دخول المدير
+export async function loginAdmin(email, password) {
+  return await signInWithEmailAndPassword(auth, email, password);
+}
+
+// كل بيانات المنصة في مستند واحد
 const docRef = doc(db, "lms", "data");
 
-const DEFAULT_STATE = { students: [], lessons: [], progress: {}, adminPass: "2580" };
+const DEFAULT_STATE = {
+  students: [],
+  lessons: [],
+  progress: {},
+  adminPass: "2580",
+};
 
 export function subscribeToState(callback) {
   return onSnapshot(
@@ -19,8 +43,9 @@ export function subscribeToState(callback) {
         const d = snap.data();
         callback({ ...DEFAULT_STATE, ...d });
       } else {
-        setDoc(docRef, DEFAULT_STATE).catch((e) => console.error(e));
-        callback(DEFAULT_STATE);
+        setDoc(docRef, DEFAULT_STATE)
+          .then(() => callback(DEFAULT_STATE))
+          .catch((e) => console.error("Firestore init error:", e));
       }
     },
     (err) => {
@@ -31,7 +56,11 @@ export function subscribeToState(callback) {
 
 export async function saveField(field, value) {
   try {
-    await setDoc(docRef, { [field]: value }, { merge: true });
+    await setDoc(
+      docRef,
+      { [field]: value },
+      { merge: true }
+    );
   } catch (e) {
     console.error("Firestore save error:", e);
   }
