@@ -17,15 +17,15 @@ const app = initializeApp(firebaseConfig);
 // Firestore
 export const db = getFirestore(app);
 
-// Authentication
+// Firebase Authentication
 export const auth = getAuth(app);
 
-// تسجيل دخول المدير
+// Login
 export async function loginAdmin(email, password) {
   return await signInWithEmailAndPassword(auth, email, password);
 }
 
-// كل بيانات المنصة في مستند واحد
+// بيانات المنصة
 const docRef = doc(db, "lms", "data");
 
 const DEFAULT_STATE = {
@@ -45,7 +45,9 @@ export function subscribeToState(callback) {
       } else {
         setDoc(docRef, DEFAULT_STATE)
           .then(() => callback(DEFAULT_STATE))
-          .catch((e) => console.error("Firestore init error:", e));
+          .catch((e) =>
+            console.error("Firestore init error:", e)
+          );
       }
     },
     (err) => {
