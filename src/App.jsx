@@ -36,7 +36,7 @@ function fmtDate(iso, lang) {
 
 const T = {
   ar: {
-    brand: "دروسي",
+    brand: "حمدى | Hamdi Baccar",
     teacherLink: "المدرّس",
     studentSubtitle: "ادخل باسمك ورقم تليفونك اللي المدرّس سجّلهم ليك",
     yourName: "اسمك",
@@ -93,7 +93,7 @@ const T = {
     connectionError: "في مشكلة في الاتصال بقاعدة البيانات. تأكد إنك حطيت بيانات Firebase صح في firebaseConfig.js",
   },
   en: {
-    brand: "My Lessons",
+    brand: "حمدى | Hamdi Baccar",
     teacherLink: "Teacher",
     studentSubtitle: "Enter the name and phone number your teacher registered for you",
     yourName: "Your name",
