@@ -27,50 +27,49 @@ const DEFAULT_STATE = {
   adminPass: "2580",
 };
 
-// تسجيل دخول الطالب بشكل مجهول
-async function ensureAnonymousLogin() {
-  if (!auth.currentUser) {
-    await signInAnonymously(auth);
-  }
-}
-
-// تسجيل دخول المدرّس
+// دخول المدرس
 export async function loginAdmin(email, password) {
   return await signInWithEmailAndPassword(auth, email, password);
 }
 
 // تحميل بيانات المنصة
-export async function subscribeToState(callback) {
-  try {
-    await ensureAnonymousLogin();
+export function subscribeToState(callback) {
+  let unsubscribe = () => {};
 
-    return onSnapshot(
-      docRef,
-      (snap) => {
-        if (snap.exists()) {
-          const d = snap.data();
-          callback({ ...DEFAULT_STATE, ...d });
-        } else {
-          setDoc(docRef, DEFAULT_STATE)
-            .then(() => callback(DEFAULT_STATE))
-            .catch((e) =>
-              console.error("Firestore init error:", e)
-            );
+  signInAnonymously(auth)
+    .then(() => {
+      unsubscribe = onSnapshot(
+        docRef,
+        (snap) => {
+          if (snap.exists()) {
+            const d = snap.data();
+            callback({ ...DEFAULT_STATE, ...d });
+          } else {
+            setDoc(docRef, DEFAULT_STATE)
+              .then(() => callback(DEFAULT_STATE))
+              .catch((e) =>
+                console.error("Firestore init error:", e)
+              );
+          }
+        },
+        (err) => {
+          console.error("Firestore sync error:", err);
         }
-      },
-      (err) => {
-        console.error("Firestore sync error:", err);
-      }
-    );
-  } catch (e) {
-    console.error("Firebase anonymous login error:", e);
-    throw e;
-  }
+      );
+    })
+    .catch((e) => {
+      console.error("Firebase anonymous login error:", e);
+    });
+
+  return () => unsubscribe();
 }
 
+// حفظ البيانات
 export async function saveField(field, value) {
   try {
-    await ensureAnonymousLogin();
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
 
     await setDoc(
       docRef,
