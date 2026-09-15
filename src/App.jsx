@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Phone, User, Lock, ArrowRight, ExternalLink, Settings, Languages } from "lucide-react";
-import { subscribeToState, saveField } from "./firebase";
+import { subscribeToState, saveField, loginAdmin } from "./firebase";
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap');`;
 
@@ -253,26 +253,90 @@ function EmptyNote({ text }) {
 
 /* ---------- admin ---------- */
 
-function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
+function AdminLogin({ back, onSuccess, lang, setLang }) {
   const t = T[lang];
+  const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
-  const submit = (e) => {
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
     e.preventDefault();
-    if (pass === adminPass) onSuccess();
-    else setErr(t.wrongPassword);
+    setErr("");
+    setBusy(true);
+
+    try {
+      await loginAdmin(email.trim(), pass);
+      onSuccess();
+    } catch (error) {
+      console.error("Firebase Authentication error:", error);
+
+      if (
+        error?.code === "auth/invalid-credential" ||
+        error?.code === "auth/wrong-password" ||
+        error?.code === "auth/user-not-found"
+      ) {
+        setErr(t.wrongPassword);
+      } else if (error?.code === "auth/invalid-email") {
+        setErr("الإيميل غير صحيح");
+      } else {
+        setErr("حصلت مشكلة في تسجيل الدخول. حاول تاني.");
+      }
+    } finally {
+      setBusy(false);
+    }
   };
+
   return (
     <Board lang={lang}>
       <TopBar back={back} label={t.back} lang={lang} setLang={setLang} />
-      <Title lang={lang} sub={t.defaultPasswordNote(adminPass)}>
-        {t.teacherLogin}
-      </Title>
-      <form onSubmit={submit} style={{ maxWidth: 320, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoFocus />
-        {err && <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>{err}</div>}
-        <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }}>
-          {t.login}
+      <Title lang={lang}>{t.teacherLogin}</Title>
+
+      <form
+        onSubmit={submit}
+        style={{
+          maxWidth: 320,
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <ChalkInput
+          label="Email"
+          icon={<User size={16} color={COLORS.chalkDim} />}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="teacher@example.com"
+          dir="ltr"
+          autoFocus
+          required
+        />
+
+        <ChalkInput
+          label={t.password}
+          icon={<Lock size={16} color={COLORS.chalkDim} />}
+          type="password"
+          value={pass}
+          onChange={(e) => setPass(e.target.value)}
+          dir="ltr"
+          required
+        />
+
+        {err && (
+          <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>
+            {err}
+          </div>
+        )}
+
+        <ChalkButton
+          type="submit"
+          color={COLORS.chalkYellow}
+          style={{ justifyContent: "center" }}
+          disabled={busy}
+        >
+          {busy ? "..." : t.login}
         </ChalkButton>
       </form>
     </Board>
