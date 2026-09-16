@@ -1,62 +1,54 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Phone, User, Lock, ArrowRight, ExternalLink, Settings, Languages, UploadCloud, FileText, Video, X } from "lucide-react";
-import { subscribeToState, saveField, uploadLessonFile, sendOtpEmail, verifyOtpCode } from "./firebase";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, UploadCloud, FileText, Video, X, User, Copy, Check } from "lucide-react";
+import { subscribeToState, saveField, uploadLessonFile } from "./firebase";
 
-const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap');`;
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');`;
 
 const COLORS = {
-  board: "#1E362F",
-  boardDark: "#152720",
-  frame: "#7A4B29",
-  frameDark: "#5C3A20",
-  chalk: "#F4F1E4",
-  chalkDim: "#C9C4B2",
-  chalkYellow: "#E8C36B",
-  chalkPink: "#D98A82",
-  chalkBlue: "#8FB8B0",
+  board: "#0B0F14",
+  boardDark: "#04060a",
+  frame: "#C9A227",
+  frameDark: "#8a6f1a",
+  chalk: "#F5F0E6",
+  chalkDim: "#9AA0A6",
+  chalkYellow: "#E8B44B",
+  chalkPink: "#E5534B",
+  chalkBlue: "#4FD1C5",
 };
 
 function uid() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
-function genOtp() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-function normPhone(p) {
-  return (p || "").replace(/[^0-9]/g, "");
-}
 function fmtDate(iso, lang) {
   if (!iso) return "—";
   const d = new Date(iso);
-  const locale = lang === "ar" ? "ar-EG" : "en-US";
+  const locale = lang === "ar" ? "ar-EG" : lang === "fr" ? "fr-FR" : "en-US";
   return d.toLocaleDateString(locale, { day: "numeric", month: "short" }) + " - " + d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+}
+function genPassword() {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  let out = "";
+  for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
 }
 
 /* ---------- translations ---------- */
 
+const BRAND = "Hamdi Baccar";
+
 const T = {
   ar: {
-    brand: "دروسي",
+    brand: BRAND,
     teacherLink: "المدرّس",
-    studentSubtitle: "ادخل باسمك ورقم تليفونك اللي المدرّس سجّلهم ليك",
-    yourName: "اسمك",
-    yourPhone: "رقم تليفونك",
-    yourEmail: "بريدك الإلكتروني",
-    yourEmailPh: "example@gmail.com",
-    emailRequired: "اكتب إيميلك عشان نبعتلك عليه الكود",
-    notRegistered: "الاسم أو الرقم مش متسجل. كلم المدرّس يضيفك الأول.",
-    sendCode: "إرسال كود التأكيد",
+    studentSubtitle: "ادخل باسم المستخدم وكلمة السر اللي المدرّس ديهملك",
+    username: "اسم المستخدم",
+    password: "كلمة السر",
+    wrongLogin: "اسم المستخدم أو كلمة السر غلط",
+    login: "دخول",
     back: "رجوع",
     logout: "خروج",
-    confirmLogin: "تأكيد الدخول",
-    codeSentTo: (name) => `اتبعت كود تأكيد لـ ${name}`,
-    demoNote: "وضع تجريبي: الكود ده كان المفروض يتبعت SMS أو إيميل. عشان دلوقتي بيتعرض هنا مباشرة:",
-    enterCode: "اكتب الكود",
-    wrongCode: "الكود مش صح، جرب تاني",
-    login: "دخول",
     teacherLogin: "دخول المدرّس",
     defaultPasswordNote: (p) => `كلمة السر الافتراضية: ${p}`,
-    password: "كلمة السر",
     wrongPassword: "كلمة السر مش صح",
     teacherDashboard: "لوحة المدرّس",
     tabStudents: "الطلاب",
@@ -68,14 +60,18 @@ const T = {
     saved: "اتحفظت",
     studentName: "اسم الطالب",
     studentNamePh: "مثال: أحمد محمد",
-    phoneNumber: "رقم التليفون",
+    chooseUsername: "اسم المستخدم",
+    usernamePh: "مثال: ahmed123",
+    generatePass: "توليد كلمة سر",
     add: "إضافة",
     noStudents: "لسه مفيش طلاب. ضيف أول طالب من الفورم فوق.",
+    copyCreds: "انسخ بيانات الدخول",
+    copied: "اتنسخت!",
     lessonTitle: "عنوان الدرس",
     lessonTitlePh: "مثال: الوحدة الأولى - المعادلات",
     category: "القسم / الوحدة",
     categoryPh: "مثال: الفصل الأول",
-    lessonUrl: "رابط الدرس (فيديو أو ملف)",
+    lessonUrl: "ملف الدرس",
     lessonDesc: "وصف مختصر (اختياري)",
     lessonDescPh: "ملخص بسيط عن الدرس",
     addLesson: "إضافة الدرس",
@@ -84,7 +80,6 @@ const T = {
     uploadFile: "ارفع فيديو أو PDF",
     uploading: (pct) => `بيترفع... ${pct}%`,
     uploadError: "حصل خطأ في الرفع، جرب تاني",
-    removeFile: "إلغاء الملف",
     orLink: "أو حط رابط بدل الرفع (يوتيوب، درايف، إلخ)",
     openPdf: "افتح الـ PDF",
     fileReady: (name) => `اترفع: ${name}`,
@@ -92,17 +87,7 @@ const T = {
     visibleToSome: (n) => `متاح لـ ${n} طالب محدد`,
     whoCanSee: "مين يقدر يشوف الدرس ده؟",
     allStudentsOpt: "كل الطلاب",
-    specificStudentsOpt: "طلاب محددين",
     noStudentsToPick: "ضيف طلاب الأول عشان تقدر تحدد مين يشوف الدرس.",
-    studentEmail: "إيميل الطالب",
-    studentEmailPh: "example@gmail.com",
-    noEmailOnFile: "الطالب ده لسه معندوش إيميل مسجّل. كلم المدرّس يضيفه.",
-    sendingCode: "بيتبعت الكود...",
-    otpSendError: "حصلت مشكلة في إرسال الكود، جرب تاني.",
-    codeSentEmail: (email) => `اتبعت كود على ${email}`,
-    resendCode: "ابعت الكود تاني",
-    verifying: "بيتأكد...",
-    wrongOrExpired: "الكود غلط أو خلصت صلاحيته، جرب تاني",
     studyingWell: "بيذاكر كويس",
     needsFollowup: "محتاج متابعة",
     notStudied: "لسه ماذاكرش",
@@ -115,30 +100,19 @@ const T = {
     openLesson: "افتح الدرس",
     studiedOn: (date) => `ذاكرته يوم ${date}`,
     loading: "...بيتحمّل",
-    connectionError: "في مشكلة في الاتصال بقاعدة البيانات. تأكد إنك حطيت بيانات Firebase صح في firebaseConfig.js",
   },
   en: {
-    brand: "My Lessons",
+    brand: BRAND,
     teacherLink: "Teacher",
-    studentSubtitle: "Enter the name and phone number your teacher registered for you",
-    yourName: "Your name",
-    yourPhone: "Your phone number",
-    yourEmail: "Your email",
-    yourEmailPh: "example@gmail.com",
-    emailRequired: "Enter your email so we can send you the code",
-    notRegistered: "Name or phone not registered. Ask your teacher to add you first.",
-    sendCode: "Send verification code",
+    studentSubtitle: "Enter the username and password your teacher gave you",
+    username: "Username",
+    password: "Password",
+    wrongLogin: "Wrong username or password",
+    login: "Log in",
     back: "Back",
     logout: "Log out",
-    confirmLogin: "Confirm Login",
-    codeSentTo: (name) => `A verification code was sent for ${name}`,
-    demoNote: "Demo mode: this code would normally be sent by SMS or email. For now it's shown here directly:",
-    enterCode: "Enter the code",
-    wrongCode: "Wrong code, try again",
-    login: "Log in",
     teacherLogin: "Teacher Login",
     defaultPasswordNote: (p) => `Default password: ${p}`,
-    password: "Password",
     wrongPassword: "Wrong password",
     teacherDashboard: "Teacher Dashboard",
     tabStudents: "Students",
@@ -150,14 +124,18 @@ const T = {
     saved: "Saved",
     studentName: "Student name",
     studentNamePh: "e.g. Ahmed Mohamed",
-    phoneNumber: "Phone number",
+    chooseUsername: "Username",
+    usernamePh: "e.g. ahmed123",
+    generatePass: "Generate password",
     add: "Add",
     noStudents: "No students yet. Add the first one using the form above.",
+    copyCreds: "Copy login details",
+    copied: "Copied!",
     lessonTitle: "Lesson title",
     lessonTitlePh: "e.g. Unit 1 - Equations",
     category: "Category / Unit",
     categoryPh: "e.g. Chapter 1",
-    lessonUrl: "Lesson link (video or file)",
+    lessonUrl: "Lesson file",
     lessonDesc: "Short description (optional)",
     lessonDescPh: "A brief summary of the lesson",
     addLesson: "Add lesson",
@@ -166,7 +144,6 @@ const T = {
     uploadFile: "Upload video or PDF",
     uploading: (pct) => `Uploading... ${pct}%`,
     uploadError: "Upload failed, try again",
-    removeFile: "Remove file",
     orLink: "Or paste a link instead (YouTube, Drive, etc.)",
     openPdf: "Open PDF",
     fileReady: (name) => `Uploaded: ${name}`,
@@ -174,17 +151,7 @@ const T = {
     visibleToSome: (n) => `Visible to ${n} selected student(s)`,
     whoCanSee: "Who can see this lesson?",
     allStudentsOpt: "All students",
-    specificStudentsOpt: "Specific students",
     noStudentsToPick: "Add students first so you can choose who sees this lesson.",
-    studentEmail: "Student email",
-    studentEmailPh: "example@gmail.com",
-    noEmailOnFile: "This student doesn't have an email on file yet. Ask the teacher to add one.",
-    sendingCode: "Sending code...",
-    otpSendError: "There was a problem sending the code, please try again.",
-    codeSentEmail: (email) => `A code was sent to ${email}`,
-    resendCode: "Resend code",
-    verifying: "Verifying...",
-    wrongOrExpired: "Wrong or expired code, please try again",
     studyingWell: "Studying well",
     needsFollowup: "Needs follow-up",
     notStudied: "Hasn't started",
@@ -197,11 +164,74 @@ const T = {
     openLesson: "Open lesson",
     studiedOn: (date) => `Studied on ${date}`,
     loading: "Loading...",
-    connectionError: "There's a problem connecting to the database. Make sure firebaseConfig.js has your correct Firebase project keys.",
+  },
+  fr: {
+    brand: BRAND,
+    teacherLink: "Professeur",
+    studentSubtitle: "Entrez le nom d'utilisateur et le mot de passe donnés par votre professeur",
+    username: "Nom d'utilisateur",
+    password: "Mot de passe",
+    wrongLogin: "Nom d'utilisateur ou mot de passe incorrect",
+    login: "Connexion",
+    back: "Retour",
+    logout: "Déconnexion",
+    teacherLogin: "Connexion Professeur",
+    defaultPasswordNote: (p) => `Mot de passe par défaut : ${p}`,
+    wrongPassword: "Mot de passe incorrect",
+    teacherDashboard: "Tableau de bord",
+    tabStudents: "Élèves",
+    tabLessons: "Cours",
+    tabProgress: "Suivi",
+    tabSettings: "Paramètres",
+    changePassword: "Changer le mot de passe",
+    save: "Enregistrer",
+    saved: "Enregistré",
+    studentName: "Nom de l'élève",
+    studentNamePh: "ex : Ahmed Mohamed",
+    chooseUsername: "Nom d'utilisateur",
+    usernamePh: "ex : ahmed123",
+    generatePass: "Générer un mot de passe",
+    add: "Ajouter",
+    noStudents: "Aucun élève pour l'instant. Ajoutez-en un ci-dessus.",
+    copyCreds: "Copier les identifiants",
+    copied: "Copié !",
+    lessonTitle: "Titre du cours",
+    lessonTitlePh: "ex : Unité 1 - Équations",
+    category: "Catégorie / Unité",
+    categoryPh: "ex : Chapitre 1",
+    lessonUrl: "Fichier du cours",
+    lessonDesc: "Description courte (optionnel)",
+    lessonDescPh: "Résumé bref du cours",
+    addLesson: "Ajouter le cours",
+    noLessons: "Aucun cours ajouté pour l'instant.",
+    noCategory: "Sans catégorie",
+    uploadFile: "Importer une vidéo ou un PDF",
+    uploading: (pct) => `Envoi... ${pct}%`,
+    uploadError: "Échec de l'envoi, réessayez",
+    orLink: "Ou collez un lien à la place (YouTube, Drive, etc.)",
+    openPdf: "Ouvrir le PDF",
+    fileReady: (name) => `Importé : ${name}`,
+    visibleToAll: "Visible par tous les élèves",
+    visibleToSome: (n) => `Visible par ${n} élève(s) sélectionné(s)`,
+    whoCanSee: "Qui peut voir ce cours ?",
+    allStudentsOpt: "Tous les élèves",
+    noStudentsToPick: "Ajoutez des élèves d'abord pour choisir qui voit ce cours.",
+    studyingWell: "Étudie bien",
+    needsFollowup: "À suivre",
+    notStudied: "Pas encore commencé",
+    ofLessons: (done, total, pct) => `${done} sur ${total} cours (${pct}%)`,
+    lastStudy: (date) => `Dernière étude : ${date}`,
+    addStudentsFirst: "Ajoutez des élèves d'abord pour suivre leur progression.",
+    welcome: (name) => `Bienvenue, ${name}`,
+    completed: (done, total) => `${done} sur ${total} terminés`,
+    noLessonsYet: "Votre professeur n'a pas encore ajouté de cours.",
+    openLesson: "Ouvrir le cours",
+    studiedOn: (date) => `Étudié le ${date}`,
+    loading: "Chargement...",
   },
 };
 
-/* ---------- shared visual primitives ---------- */
+/* ---------- shared visual primitives (cinematic theme) ---------- */
 
 function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chalk, style = {}, type = "button", disabled }) {
   const [hover, setHover] = useState(false);
@@ -215,12 +245,13 @@ function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chal
     display: "inline-flex",
     alignItems: "center",
     gap: 8,
-    transition: "transform 0.15s ease, background 0.15s ease",
-    border: `2px dashed ${color}`,
+    transition: "transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease",
+    border: `1.5px solid ${color}`,
     background: variant === "solid" ? (hover ? color : "transparent") : hover ? `${color}22` : "transparent",
-    color: variant === "solid" ? (hover ? COLORS.boardDark : color) : color,
+    color: variant === "solid" ? (hover ? "#0B0F14" : color) : color,
     opacity: disabled ? 0.5 : 1,
     transform: hover && !disabled ? "translateY(-2px)" : "translateY(0)",
+    boxShadow: hover && !disabled ? `0 0 18px ${color}66` : "none",
     ...style,
   };
   return (
@@ -234,7 +265,7 @@ function ChalkInput({ label, icon, dir, ...props }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
       {label && <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600 }}>{label}</span>}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1.5px dashed ${COLORS.chalkDim}`, borderRadius: 8, padding: "10px 12px", background: "rgba(244,241,228,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", background: "rgba(255,255,255,0.03)" }}>
         {icon}
         <input {...props} dir={dir} style={{ background: "transparent", border: "none", outline: "none", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15, width: "100%" }} />
       </div>
@@ -245,12 +276,39 @@ function ChalkInput({ label, icon, dir, ...props }) {
 function Board({ lang, children }) {
   const dir = lang === "ar" ? "rtl" : "ltr";
   return (
-    <div dir={dir} style={{ minHeight: "100vh", width: "100%", background: `radial-gradient(circle at 30% 0%, ${COLORS.board} 0%, ${COLORS.boardDark} 70%)`, boxSizing: "border-box", padding: "clamp(14px,4vw,28px) clamp(8px,3vw,16px) 50px", fontFamily: "Cairo, sans-serif" }}>
+    <div
+      dir={dir}
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        background: `
+          radial-gradient(ellipse 900px 500px at 50% -10%, rgba(232,180,75,0.16), transparent 60%),
+          radial-gradient(ellipse 1200px 800px at 50% 110%, rgba(79,209,197,0.08), transparent 60%),
+          linear-gradient(180deg, ${COLORS.board} 0%, ${COLORS.boardDark} 100%)
+        `,
+        boxSizing: "border-box",
+        padding: "clamp(14px,4vw,28px) clamp(8px,3vw,16px) 50px",
+        fontFamily: "Cairo, sans-serif",
+        position: "relative",
+      }}
+    >
       <style>{`${FONT_IMPORT}
         * { box-sizing: border-box; }
         input:focus { outline: none; }
+        body { margin: 0; }
       `}</style>
-      <div style={{ maxWidth: 880, margin: "0 auto", border: `6px solid ${COLORS.frame}`, borderRadius: 14, boxShadow: `0 0 0 3px ${COLORS.frameDark}, 0 20px 50px rgba(0,0,0,0.4)`, padding: "clamp(18px,5vw,28px) clamp(14px,4vw,24px) clamp(24px,5vw,36px)", background: `linear-gradient(180deg, rgba(255,255,255,0.02), transparent)` }}>
+      <div
+        style={{
+          maxWidth: 880,
+          margin: "0 auto",
+          border: `1px solid ${COLORS.frame}`,
+          borderRadius: 16,
+          boxShadow: `0 0 0 1px rgba(0,0,0,0.6), 0 0 40px rgba(201,162,39,0.12), 0 30px 60px rgba(0,0,0,0.6)`,
+          padding: "clamp(20px,5vw,32px) clamp(16px,4vw,26px) clamp(26px,5vw,38px)",
+          background: `linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2))`,
+          backdropFilter: "blur(2px)",
+        }}
+      >
         {children}
       </div>
     </div>
@@ -258,23 +316,49 @@ function Board({ lang, children }) {
 }
 
 function LangToggle({ lang, setLang }) {
+  const langs = ["en", "ar", "fr"];
   return (
-    <button
-      onClick={() => setLang(lang === "ar" ? "en" : "ar")}
-      style={{ background: "none", border: `1.5px dashed ${COLORS.chalkDim}`, borderRadius: 20, color: COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontSize: 12.5, fontWeight: 700, padding: "6px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
-    >
-      <Languages size={14} /> {lang === "ar" ? "EN" : "AR"}
-    </button>
+    <div style={{ display: "flex", border: `1px solid rgba(201,162,39,0.4)`, borderRadius: 20, overflow: "hidden" }}>
+      {langs.map((l) => (
+        <button
+          key={l}
+          onClick={() => setLang(l)}
+          style={{
+            background: lang === l ? COLORS.frame : "transparent",
+            color: lang === l ? "#0B0F14" : COLORS.chalkDim,
+            border: "none",
+            padding: "5px 10px",
+            fontFamily: "Cairo, sans-serif",
+            fontSize: 11.5,
+            fontWeight: 800,
+            cursor: "pointer",
+            letterSpacing: 0.5,
+          }}
+        >
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
   );
 }
 
 function Title({ lang, children, sub }) {
   return (
     <div style={{ textAlign: "center", marginBottom: 26 }}>
-      <h1 style={{ fontFamily: lang === "ar" ? "'Aref Ruqaa', serif" : "Cairo, sans-serif", color: COLORS.chalk, fontSize: "clamp(28px, 8vw, 42px)", margin: 0, fontWeight: 700, textShadow: "0 0 12px rgba(244,241,228,0.15)" }}>
+      <h1
+        style={{
+          fontFamily: lang === "ar" ? "'Aref Ruqaa', serif" : "'Playfair Display', serif",
+          color: COLORS.chalk,
+          fontSize: "clamp(28px, 8vw, 44px)",
+          margin: 0,
+          fontWeight: 800,
+          letterSpacing: lang === "ar" ? 0 : 1,
+          textShadow: `0 0 24px rgba(232,180,75,0.35), 0 0 60px rgba(232,180,75,0.15)`,
+        }}
+      >
         {children}
       </h1>
-      {sub && <p style={{ color: COLORS.chalkDim, marginTop: 8, fontSize: 15 }}>{sub}</p>}
+      {sub && <p style={{ color: COLORS.chalkDim, marginTop: 10, fontSize: 15 }}>{sub}</p>}
     </div>
   );
 }
@@ -284,7 +368,7 @@ function TopBar({ back, label, lang, setLang }) {
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
       {back ? (
         <button onClick={back} style={{ background: "none", border: "none", color: COLORS.chalkDim, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 14 }}>
-          <ArrowRight size={16} style={{ transform: lang === "en" ? "scaleX(-1)" : "none" }} /> {label}
+          <ArrowRight size={16} style={{ transform: lang === "en" || lang === "fr" ? "scaleX(-1)" : "none" }} /> {label}
         </button>
       ) : (
         <span />
@@ -294,11 +378,11 @@ function TopBar({ back, label, lang, setLang }) {
   );
 }
 
-const rowStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", border: `1.5px dashed rgba(244,241,228,0.25)`, borderRadius: 10, padding: "12px 14px" };
+const rowStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", border: `1px solid rgba(201,162,39,0.25)`, borderRadius: 10, padding: "12px 14px", background: "rgba(255,255,255,0.02)" };
 const iconBtnStyle = { background: "none", border: "none", cursor: "pointer", padding: 6 };
 
 function EmptyNote({ text }) {
-  return <div style={{ textAlign: "center", color: COLORS.chalkDim, padding: "30px 10px", border: `1.5px dashed ${COLORS.chalkDim}`, borderRadius: 10, fontSize: 14 }}>{text}</div>;
+  return <div style={{ textAlign: "center", color: COLORS.chalkDim, padding: "30px 10px", border: `1px dashed rgba(201,162,39,0.3)`, borderRadius: 10, fontSize: 14 }}>{text}</div>;
 }
 
 /* ---------- admin ---------- */
@@ -347,7 +431,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, prog
           <button
             key={tb.id}
             onClick={() => setTab(tb.id)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 14.5, padding: "8px 14px", borderBottom: tab === tb.id ? `2px dashed ${COLORS.chalkYellow}` : "2px dashed transparent", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 14.5, padding: "8px 14px", borderBottom: tab === tb.id ? `2px solid ${COLORS.chalkYellow}` : "2px solid transparent", display: "flex", alignItems: "center", gap: 6 }}
           >
             {tb.icon} {tb.label}
           </button>
@@ -380,17 +464,28 @@ function SettingsTab({ t, adminPass, setAdminPass }) {
 
 function StudentsTab({ t, students, setStudents }) {
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [copiedId, setCopiedId] = useState(null);
+
   const add = (e) => {
     e.preventDefault();
-    if (!name.trim() || !normPhone(phone)) return;
-    setStudents([...students, { id: uid(), name: name.trim(), phone: normPhone(phone), email: email.trim(), createdAt: new Date().toISOString() }]);
+    if (!name.trim() || !username.trim() || !password.trim()) return;
+    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), createdAt: new Date().toISOString() }]);
     setName("");
-    setPhone("");
-    setEmail("");
+    setUsername("");
+    setPassword("");
   };
   const remove = (id) => setStudents(students.filter((s) => s.id !== id));
+
+  const copyCreds = (s) => {
+    const text = `${t.chooseUsername}: ${s.username}\n${t.password}: ${s.password}`;
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopiedId(s.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
   return (
     <div>
       <form onSubmit={add} style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 22, alignItems: "flex-end" }}>
@@ -398,11 +493,14 @@ function StudentsTab({ t, students, setStudents }) {
           <ChalkInput label={t.studentName} icon={<User size={16} color={COLORS.chalkDim} />} value={name} onChange={(e) => setName(e.target.value)} placeholder={t.studentNamePh} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
-          <ChalkInput label={t.phoneNumber} icon={<Phone size={16} color={COLORS.chalkDim} />} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="01xxxxxxxxx" dir="ltr" />
+          <ChalkInput label={t.chooseUsername} value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.usernamePh} dir="ltr" />
         </div>
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <ChalkInput label={t.studentEmail} icon={<User size={16} color={COLORS.chalkDim} />} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.studentEmailPh} dir="ltr" />
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
         </div>
+        <ChalkButton type="button" variant="outline" color={COLORS.chalkBlue} onClick={() => setPassword(genPassword())}>
+          {t.generatePass}
+        </ChalkButton>
         <ChalkButton type="submit" color={COLORS.chalkYellow}>
           <Plus size={16} /> {t.add}
         </ChalkButton>
@@ -416,12 +514,18 @@ function StudentsTab({ t, students, setStudents }) {
             <div key={s.id} style={rowStyle}>
               <div>
                 <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{s.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 13, direction: "ltr", textAlign: "right" }}>{s.phone}</div>
-                {s.email && <div style={{ color: COLORS.chalkDim, fontSize: 12.5, direction: "ltr", textAlign: "right" }}>{s.email}</div>}
+                <div style={{ color: COLORS.chalkDim, fontSize: 13, direction: "ltr", textAlign: "right" }}>
+                  {s.username} · {s.password}
+                </div>
               </div>
-              <button onClick={() => remove(s.id)} style={iconBtnStyle}>
-                <Trash2 size={16} color={COLORS.chalkPink} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button onClick={() => copyCreds(s)} style={iconBtnStyle} title={t.copyCreds}>
+                  {copiedId === s.id ? <Check size={16} color={COLORS.chalkBlue} /> : <Copy size={16} color={COLORS.chalkDim} />}
+                </button>
+                <button onClick={() => remove(s.id)} style={iconBtnStyle}>
+                  <Trash2 size={16} color={COLORS.chalkPink} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -439,7 +543,7 @@ function LessonVisibilityPicker({ t, students, value, onChange }) {
     onChange(next.length === 0 ? null : next);
   };
   return (
-    <div style={{ border: `1.5px dashed ${COLORS.chalkDim}`, borderRadius: 8, padding: 10 }}>
+    <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 10 }}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -516,7 +620,7 @@ function LessonsTab({ t, lessons, setLessons, students }) {
 
   return (
     <div>
-      <form onSubmit={add} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1.5px dashed ${COLORS.chalkDim}`, borderRadius: 10, padding: 16 }}>
+      <form onSubmit={add} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: 2, minWidth: 180 }}>
             <ChalkInput label={t.lessonTitle} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t.lessonTitlePh} />
@@ -527,7 +631,7 @@ function LessonsTab({ t, lessons, setLessons, students }) {
         </div>
         <div>
           <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600, fontFamily: "Cairo, sans-serif" }}>{t.lessonUrl}</span>
-          <div style={{ marginTop: 6, border: `1.5px dashed ${COLORS.chalkDim}`, borderRadius: 8, padding: 12 }}>
+          <div style={{ marginTop: 6, border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
             {!form.fileName ? (
               <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: uploading ? "not-allowed" : "pointer", color: COLORS.chalkYellow, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 14 }}>
                 <UploadCloud size={18} />
@@ -546,7 +650,7 @@ function LessonsTab({ t, lessons, setLessons, students }) {
               </div>
             )}
             {uploading && (
-              <div style={{ width: "100%", height: 6, borderRadius: 4, background: "rgba(244,241,228,0.1)", overflow: "hidden", marginTop: 10 }}>
+              <div style={{ width: "100%", height: 6, borderRadius: 4, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 10 }}>
                 <div style={{ width: `${progress}%`, height: "100%", background: COLORS.chalkYellow, transition: "width 0.2s ease" }} />
               </div>
             )}
@@ -641,11 +745,11 @@ function ProgressTab({ t, lang, students, lessons, progress }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ color: COLORS.chalk, fontWeight: 800, fontSize: 15 }}>{s.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 12.5, direction: "ltr", textAlign: "right" }}>{s.phone}</div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 12.5, direction: "ltr", textAlign: "right" }}>{s.username}</div>
               </div>
-              <span style={{ border: `1.5px dashed ${badgeColor}`, color: badgeColor, borderRadius: 20, padding: "4px 12px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap" }}>{badgeText}</span>
+              <span style={{ border: `1px solid ${badgeColor}`, color: badgeColor, borderRadius: 20, padding: "4px 12px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap" }}>{badgeText}</span>
             </div>
-            <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(244,241,228,0.08)", overflow: "hidden" }}>
+            <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
               <div style={{ width: `${stats.pct}%`, height: "100%", background: badgeColor, transition: "width 0.3s ease" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: COLORS.chalkDim }}>
@@ -661,35 +765,18 @@ function ProgressTab({ t, lang, students, lessons, progress }) {
 
 /* ---------- student ---------- */
 
-function StudentLogin({ students, setStudents, onFound, onTeacher, lang, setLang }) {
+function StudentLogin({ students, onFound, onTeacher, lang, setLang }) {
   const t = T[lang];
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
 
-  const submit = async (e) => {
+  const submit = (e) => {
     e.preventDefault();
-    const p = normPhone(phone);
-    const match = students.find((s) => normPhone(s.phone) === p && s.name.trim() === name.trim());
-    if (!match) { setErr(t.notRegistered); return; }
-    if (!email.trim()) { setErr(t.emailRequired); return; }
+    const match = students.find((s) => s.username.toLowerCase() === username.trim().toLowerCase() && s.password === password);
+    if (!match) { setErr(t.wrongLogin); return; }
     setErr("");
-    setBusy(true);
-    const updated = { ...match, email: email.trim() };
-    try {
-      await sendOtpEmail(updated.id, updated.email, updated.name);
-      if (updated.email !== match.email) {
-        setStudents(students.map((s) => (s.id === match.id ? updated : s)));
-      }
-      onFound(updated);
-    } catch (error) {
-      console.error(error);
-      setErr(t.otpSendError);
-    } finally {
-      setBusy(false);
-    }
+    onFound(match);
   };
 
   return (
@@ -702,70 +789,12 @@ function StudentLogin({ students, setStudents, onFound, onTeacher, lang, setLang
       </div>
       <Title lang={lang} sub={t.studentSubtitle}>{t.brand}</Title>
       <form onSubmit={submit} style={{ maxWidth: 340, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        <ChalkInput label={t.yourName} icon={<User size={16} color={COLORS.chalkDim} />} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        <ChalkInput label={t.yourPhone} icon={<Phone size={16} color={COLORS.chalkDim} />} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
-        <ChalkInput label={t.yourEmail} icon={<User size={16} color={COLORS.chalkDim} />} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.yourEmailPh} dir="ltr" />
+        <ChalkInput label={t.username} icon={<User size={16} color={COLORS.chalkDim} />} value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" autoFocus />
+        <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
         {err && <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>{err}</div>}
-        <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }} disabled={busy}>
-          {busy ? t.sendingCode : t.sendCode}
+        <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }}>
+          {t.login}
         </ChalkButton>
-      </form>
-    </Board>
-  );
-}
-
-function StudentOtp({ back, student, onVerified, lang, setLang }) {
-  const t = T[lang];
-  const [entered, setEntered] = useState("");
-  const [err, setErr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setErr("");
-    setBusy(true);
-    try {
-      const { valid } = await verifyOtpCode(student.id, entered.trim());
-      if (valid) onVerified();
-      else setErr(t.wrongOrExpired);
-    } catch (error) {
-      console.error(error);
-      setErr(t.otpSendError);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const resend = async () => {
-    setResending(true);
-    setErr("");
-    try {
-      await sendOtpEmail(student.id, student.email, student.name);
-      setResent(true);
-      setTimeout(() => setResent(false), 4000);
-    } catch (error) {
-      console.error(error);
-      setErr(t.otpSendError);
-    } finally {
-      setResending(false);
-    }
-  };
-
-  return (
-    <Board lang={lang}>
-      <TopBar back={back} label={t.back} lang={lang} setLang={setLang} />
-      <Title lang={lang} sub={t.codeSentEmail(student.email)}>{t.confirmLogin}</Title>
-      <form onSubmit={submit} style={{ maxWidth: 340, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
-        <ChalkInput label={t.enterCode} value={entered} onChange={(e) => setEntered(e.target.value)} dir="ltr" autoFocus maxLength={6} />
-        {err && <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>{err}</div>}
-        <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }} disabled={busy}>
-          {busy ? t.verifying : t.login}
-        </ChalkButton>
-        <button type="button" onClick={resend} disabled={resending} style={{ background: "none", border: "none", color: COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontSize: 13, cursor: resending ? "not-allowed" : "pointer" }}>
-          {resent ? t.codeSentEmail(student.email) : resending ? t.sendingCode : t.resendCode}
-        </button>
       </form>
     </Board>
   );
@@ -801,7 +830,7 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
           <span>{t.completed(stats.done, stats.total)}</span>
           <span>{stats.pct}%</span>
         </div>
-        <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(244,241,228,0.08)", overflow: "hidden" }}>
+        <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
           <div style={{ width: `${stats.pct}%`, height: "100%", background: COLORS.chalkYellow, transition: "width 0.3s ease" }} />
         </div>
       </div>
@@ -863,7 +892,7 @@ export default function App() {
   const [screen, setScreen] = useState("studentLogin");
   const [loaded, setLoaded] = useState(false);
   const [connError, setConnError] = useState(false);
-  const [lang, setLang] = useState("ar");
+  const [lang, setLang] = useState("en");
   const [students, setStudentsState] = useState([]);
   const [lessons, setLessonsState] = useState([]);
   const [progress, setProgressState] = useState({});
@@ -899,7 +928,7 @@ export default function App() {
       <Board lang={lang}>
         <Title lang={lang}>{T[lang].brand}</Title>
         <div style={{ textAlign: "center", color: connError ? COLORS.chalkPink : COLORS.chalkDim, fontSize: 14, lineHeight: 1.8 }}>
-          {connError ? T[lang].connectionError : T[lang].loading}
+          {connError ? "Connection problem — check firebaseConfig.js" : T[lang].loading}
         </div>
       </Board>
     );
@@ -909,11 +938,10 @@ export default function App() {
     return (
       <StudentLogin
         students={students}
-        setStudents={setStudents}
         lang={lang}
         setLang={setLang}
         onTeacher={() => setScreen("adminLogin")}
-        onFound={(s) => { setCurrentStudent(s); setScreen("studentOtp"); }}
+        onFound={(s) => { setCurrentStudent(s); setScreen("studentDashboard"); }}
       />
     );
 
@@ -935,9 +963,6 @@ export default function App() {
         setLang={setLang}
       />
     );
-
-  if (screen === "studentOtp")
-    return <StudentOtp back={() => setScreen("studentLogin")} student={currentStudent} onVerified={() => setScreen("studentDashboard")} lang={lang} setLang={setLang} />;
 
   if (screen === "studentDashboard")
     return (
