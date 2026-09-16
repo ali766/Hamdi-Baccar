@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, UploadCloud, FileText, Video, X, User, Copy, Check } from "lucide-react";
-import { subscribeToState, saveField, uploadLessonFile } from "./firebase";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2 } from "lucide-react";
+import { subscribeToState, saveField } from "./firebase";
+
+function toEmbedUrl(url) {
+  if (!url) return null;
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([\w-]{6,})/);
+  if (yt) return { type: "video", src: `https://www.youtube.com/embed/${yt[1]}` };
+  const drive = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
+  if (drive) return { type: "frame", src: `https://drive.google.com/file/d/${drive[1]}/preview` };
+  return null;
+}
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');`;
 
@@ -71,7 +80,8 @@ const T = {
     lessonTitlePh: "مثال: الوحدة الأولى - المعادلات",
     category: "القسم / الوحدة",
     categoryPh: "مثال: الفصل الأول",
-    lessonUrl: "ملف الدرس",
+    lessonUrl: "رابط الدرس (يوتيوب، Google Drive، أو أي رابط)",
+    lessonUrlPh: "https://youtube.com/... أو https://drive.google.com/...",
     lessonDesc: "وصف مختصر (اختياري)",
     lessonDescPh: "ملخص بسيط عن الدرس",
     addLesson: "إضافة الدرس",
@@ -135,7 +145,8 @@ const T = {
     lessonTitlePh: "e.g. Unit 1 - Equations",
     category: "Category / Unit",
     categoryPh: "e.g. Chapter 1",
-    lessonUrl: "Lesson file",
+    lessonUrl: "Lesson link (YouTube, Google Drive, or any link)",
+    lessonUrlPh: "https://youtube.com/... or https://drive.google.com/...",
     lessonDesc: "Short description (optional)",
     lessonDescPh: "A brief summary of the lesson",
     addLesson: "Add lesson",
@@ -199,7 +210,8 @@ const T = {
     lessonTitlePh: "ex : Unité 1 - Équations",
     category: "Catégorie / Unité",
     categoryPh: "ex : Chapitre 1",
-    lessonUrl: "Fichier du cours",
+    lessonUrl: "Lien du cours (YouTube, Google Drive, ou autre)",
+    lessonUrlPh: "https://youtube.com/... ou https://drive.google.com/...",
     lessonDesc: "Description courte (optionnel)",
     lessonDescPh: "Résumé bref du cours",
     addLesson: "Ajouter le cours",
@@ -577,38 +589,13 @@ function LessonVisibilityPicker({ t, students, value, onChange }) {
 }
 
 function LessonsTab({ t, lessons, setLessons, students }) {
-  const [form, setForm] = useState({ title: "", category: "", desc: "", url: "", fileType: "", fileName: "", visibleTo: null });
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [uploadErr, setUploadErr] = useState("");
-
-  const handleFile = async (e) => {
-    const file = e.target.files[0];
-    e.target.value = "";
-    if (!file) return;
-    setUploadErr("");
-    setUploading(true);
-    setProgress(0);
-    try {
-      const { url, fileName } = await uploadLessonFile(file, setProgress);
-      const fileType = file.type.startsWith("video/") ? "video" : file.type === "application/pdf" ? "pdf" : "file";
-      setForm((f) => ({ ...f, url, fileName, fileType }));
-    } catch (err) {
-      console.error(err);
-      setUploadErr(t.uploadError);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const clearFile = () => setForm((f) => ({ ...f, url: "", fileName: "", fileType: "" }));
+  const [form, setForm] = useState({ title: "", category: "", desc: "", url: "", visibleTo: null });
 
   const add = (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
     setLessons([...lessons, { id: uid(), ...form, category: form.category.trim() || t.noCategory, createdAt: new Date().toISOString() }]);
-    setForm({ title: "", category: "", desc: "", url: "", fileType: "", fileName: "", visibleTo: null });
-    setProgress(0);
+    setForm({ title: "", category: "", desc: "", url: "", visibleTo: null });
   };
   const remove = (id) => setLessons(lessons.filter((l) => l.id !== id));
 
@@ -629,45 +616,7 @@ function LessonsTab({ t, lessons, setLessons, students }) {
             <ChalkInput label={t.category} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder={t.categoryPh} />
           </div>
         </div>
-        <div>
-          <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600, fontFamily: "Cairo, sans-serif" }}>{t.lessonUrl}</span>
-          <div style={{ marginTop: 6, border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
-            {!form.fileName ? (
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: uploading ? "not-allowed" : "pointer", color: COLORS.chalkYellow, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 14 }}>
-                <UploadCloud size={18} />
-                {uploading ? t.uploading(progress) : t.uploadFile}
-                <input type="file" accept="video/*,application/pdf" onChange={handleFile} disabled={uploading} style={{ display: "none" }} />
-              </label>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalk, fontSize: 13.5 }}>
-                  {form.fileType === "video" ? <Video size={16} color={COLORS.chalkBlue} /> : <FileText size={16} color={COLORS.chalkBlue} />}
-                  {t.fileReady(form.fileName)}
-                </span>
-                <button type="button" onClick={clearFile} style={iconBtnStyle}>
-                  <X size={16} color={COLORS.chalkPink} />
-                </button>
-              </div>
-            )}
-            {uploading && (
-              <div style={{ width: "100%", height: 6, borderRadius: 4, background: "rgba(255,255,255,0.08)", overflow: "hidden", marginTop: 10 }}>
-                <div style={{ width: `${progress}%`, height: "100%", background: COLORS.chalkYellow, transition: "width 0.2s ease" }} />
-              </div>
-            )}
-            {uploadErr && <div style={{ color: COLORS.chalkPink, fontSize: 12.5, marginTop: 8 }}>{uploadErr}</div>}
-            {!form.fileName && (
-              <div style={{ marginTop: 10 }}>
-                <ChalkInput
-                  label={t.orLink}
-                  value={form.url}
-                  onChange={(e) => setForm({ ...form, url: e.target.value, fileType: "link", fileName: "" })}
-                  placeholder="https://..."
-                  dir="ltr"
-                />
-              </div>
-            )}
-          </div>
-        </div>
+        <ChalkInput label={t.lessonUrl} icon={<Link2 size={16} color={COLORS.chalkDim} />} value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder={t.lessonUrlPh} dir="ltr" />
         <ChalkInput label={t.lessonDesc} value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.lessonDescPh} />
         <LessonVisibilityPicker t={t} students={students} value={form.visibleTo} onChange={(v) => setForm({ ...form, visibleTo: v })} />
         <div>
@@ -687,13 +636,9 @@ function LessonsTab({ t, lessons, setLessons, students }) {
               {items.map((l) => (
                 <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {l.fileType === "video" && <Video size={16} color={COLORS.chalkBlue} />}
-                      {l.fileType === "pdf" && <FileText size={16} color={COLORS.chalkBlue} />}
-                      <div>
-                        <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
-                        {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
-                      </div>
+                    <div>
+                      <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
+                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
                     </div>
                     <button onClick={() => remove(l.id)} style={iconBtnStyle}>
                       <Trash2 size={16} color={COLORS.chalkPink} />
@@ -844,6 +789,7 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {items.map((l) => {
                 const watched = progress[student.id] && progress[student.id][l.id] && progress[student.id][l.id].watched;
+                const embed = toEmbedUrl(l.url);
                 return (
                   <div key={l.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10, flexDirection: "column", alignItems: "stretch" }}>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between" }}>
@@ -859,21 +805,20 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                           )}
                         </div>
                       </div>
-                      {l.url && l.fileType === "pdf" && (
-                        <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
-                          {t.openPdf} <ExternalLink size={14} />
-                        </a>
-                      )}
-                      {l.url && (!l.fileType || l.fileType === "link") && (
+                      {l.url && !embed && (
                         <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
                           {t.openLesson} <ExternalLink size={14} />
                         </a>
                       )}
                     </div>
-                    {l.url && l.fileType === "video" && (
-                      <video controls preload="metadata" style={{ width: "100%", maxWidth: 480, borderRadius: 8, marginRight: 34 }}>
-                        <source src={l.url} />
-                      </video>
+                    {embed && (
+                      <iframe
+                        src={embed.src}
+                        title={l.title}
+                        allow="autoplay; encrypted-media; fullscreen"
+                        allowFullScreen
+                        style={{ width: "100%", maxWidth: 480, aspectRatio: "16/9", border: "none", borderRadius: 8, marginRight: 34 }}
+                      />
                     )}
                   </div>
                 );
