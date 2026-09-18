@@ -3,10 +3,11 @@
 // اللي بيحمي بياناتك فعليًا هو Firestore Security Rules (شوف الـ README).
 
 export const firebaseConfig = {
-  apiKey: "ضع_مفتاحك_هنا",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:xxxxxxxxxxxxxxxxxx",
+ apiKey: "AIzaSyDMJe8TXbXfwlYdkQtJlR7Ke4mhXxG6tyU",
+  authDomain: "hamdi-2013c.firebaseapp.com",
+  projectId: "hamdi-2013c",
+  storageBucket: "hamdi-2013c.firebasestorage.app",
+  messagingSenderId: "143963166404",
+  appId: "1:143963166404:web:023299df53346947821b91",
+  measurementId: "G-ZSJMBEQVRY"
 };
