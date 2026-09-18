@@ -411,7 +411,7 @@ function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
   return (
     <Board lang={lang}>
       <TopBar back={back} label={t.back} lang={lang} setLang={setLang} />
-      <Title lang={lang} 
+      <Title lang={lang}>
         {t.teacherLogin}
       </Title>
       <form onSubmit={submit} style={{ maxWidth: 320, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
