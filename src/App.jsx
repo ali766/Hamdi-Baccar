@@ -250,7 +250,7 @@ function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chal
   const base = {
     fontFamily: "Cairo, sans-serif",
     fontWeight: 700,
-    fontSize: 15,
+    fontSize: 16,
     padding: "12px 22px",
     borderRadius: 10,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -276,10 +276,10 @@ function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chal
 function ChalkInput({ label, icon, dir, ...props }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
-      {label && <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600 }}>{label}</span>}
+      {label && <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{label}</span>}
       <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", background: "rgba(255,255,255,0.03)" }}>
         {icon}
-        <input {...props} dir={dir} style={{ background: "transparent", border: "none", outline: "none", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15, width: "100%" }} />
+        <input {...props} dir={dir} style={{ background: "transparent", border: "none", outline: "none", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16, width: "100%" }} />
       </div>
     </label>
   );
@@ -311,12 +311,12 @@ function Board({ lang, children }) {
       `}</style>
       <div
         style={{
-          maxWidth: 880,
+          maxWidth: 960,
           margin: "0 auto",
-          border: `1px solid ${COLORS.frame}`,
-          borderRadius: 16,
-          boxShadow: `0 0 0 1px rgba(0,0,0,0.6), 0 0 40px rgba(201,162,39,0.12), 0 30px 60px rgba(0,0,0,0.6)`,
-          padding: "clamp(20px,5vw,32px) clamp(16px,4vw,26px) clamp(26px,5vw,38px)",
+          border: `2.5px solid ${COLORS.frame}`,
+          borderRadius: 18,
+          boxShadow: `0 0 0 1px rgba(0,0,0,0.6), 0 0 50px rgba(201,162,39,0.16), 0 30px 60px rgba(0,0,0,0.6)`,
+          padding: "clamp(24px,5vw,40px) clamp(20px,4vw,34px) clamp(30px,5vw,46px)",
           background: `linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2))`,
           backdropFilter: "blur(2px)",
         }}
@@ -411,7 +411,7 @@ function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
   return (
     <Board lang={lang}>
       <TopBar back={back} label={t.back} lang={lang} setLang={setLang} />
-      <Title lang={lang}>
+      <Title lang={lang} sub={t.defaultPasswordNote(adminPass)}>
         {t.teacherLogin}
       </Title>
       <form onSubmit={submit} style={{ maxWidth: 320, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -443,7 +443,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, prog
           <button
             key={tb.id}
             onClick={() => setTab(tb.id)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 14.5, padding: "8px 14px", borderBottom: tab === tb.id ? `2px solid ${COLORS.chalkYellow}` : "2px solid transparent", display: "flex", alignItems: "center", gap: 6 }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 15.5, padding: "8px 14px", borderBottom: tab === tb.id ? `2px solid ${COLORS.chalkYellow}` : "2px solid transparent", display: "flex", alignItems: "center", gap: 6 }}
           >
             {tb.icon} {tb.label}
           </button>
@@ -526,7 +526,7 @@ function StudentsTab({ t, students, setStudents }) {
             <div key={s.id} style={rowStyle}>
               <div>
                 <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{s.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 13, direction: "ltr", textAlign: "right" }}>
+                <div style={{ color: COLORS.chalkDim, fontSize: 14, direction: "ltr", textAlign: "right" }}>
                   {s.username} · {s.password}
                 </div>
               </div>
@@ -631,7 +631,7 @@ function LessonsTab({ t, lessons, setLessons, students }) {
       ) : (
         Object.entries(grouped).map(([cat, items]) => (
           <div key={cat} style={{ marginBottom: 20 }}>
-            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 15, marginBottom: 8 }}>{cat}</div>
+            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{cat}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {items.map((l) => (
                 <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
@@ -690,14 +690,14 @@ function ProgressTab({ t, lang, students, lessons, progress }) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <div style={{ color: COLORS.chalk, fontWeight: 800, fontSize: 15 }}>{s.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 12.5, direction: "ltr", textAlign: "right" }}>{s.username}</div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 13.5, direction: "ltr", textAlign: "right" }}>{s.username}</div>
               </div>
               <span style={{ border: `1px solid ${badgeColor}`, color: badgeColor, borderRadius: 20, padding: "4px 12px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap" }}>{badgeText}</span>
             </div>
             <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
               <div style={{ width: `${stats.pct}%`, height: "100%", background: badgeColor, transition: "width 0.3s ease" }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: COLORS.chalkDim }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, color: COLORS.chalkDim }}>
               <span>{t.ofLessons(stats.done, stats.total, stats.pct)}</span>
               <span>{t.lastStudy(fmtDate(stats.lastAt, lang))}</span>
             </div>
@@ -771,7 +771,7 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
       <Title lang={lang} sub={t.welcome(student.name)}>{t.brand}</Title>
 
       <div style={{ maxWidth: 500, margin: "0 auto 26px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: COLORS.chalkDim, marginBottom: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: COLORS.chalkDim, marginBottom: 6 }}>
           <span>{t.completed(stats.done, stats.total)}</span>
           <span>{stats.pct}%</span>
         </div>
@@ -785,7 +785,7 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
       ) : (
         Object.entries(grouped).map(([cat, items]) => (
           <div key={cat} style={{ marginBottom: 22 }}>
-            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 15, marginBottom: 8 }}>{cat}</div>
+            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{cat}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {items.map((l) => {
                 const watched = progress[student.id] && progress[student.id][l.id] && progress[student.id][l.id].watched;
@@ -806,7 +806,7 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                         </div>
                       </div>
                       {l.url && !embed && (
-                        <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                        <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
                           {t.openLesson} <ExternalLink size={14} />
                         </a>
                       )}
