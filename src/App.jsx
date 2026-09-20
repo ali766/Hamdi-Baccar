@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks } from "lucide-react";
 import {
   subscribeToStudents,
   subscribeToLessons,
@@ -125,6 +125,29 @@ const T = {
     addLesson: "إضافة الدرس",
     noLessons: "لسه مفيش دروس مضافة.",
     noCategory: "بدون قسم",
+    typeVideo: "فيديو",
+    typePdf: "PDF",
+    typeText: "درس مكتوب",
+    typeExam: "امتحان",
+    lessonPdfUrl: "رابط الـ PDF (Google Drive)",
+    lessonPdfUrlPh: "https://drive.google.com/...",
+    lessonContent: "محتوى الدرس",
+    lessonContentPh: "اكتب محتوى الدرس هنا...",
+    examQuestions: "أسئلة الامتحان",
+    addQuestion: "إضافة سؤال",
+    questionText: "نص السؤال",
+    questionTextPh: "اكتب السؤال هنا",
+    optionText: (n) => `الاختيار ${n}`,
+    addOption: "إضافة اختيار",
+    markCorrect: "الإجابة الصح",
+    removeQuestion: "احذف السؤال",
+    needAtLeastOneQuestion: "ضيف سؤال واحد على الأقل قبل ما تحفظ الامتحان.",
+    questionsCount: (n) => `${n} سؤال`,
+    submitExam: "سلّم الامتحان",
+    examAlreadySubmitted: "سلّمت الامتحان ده قبل كده",
+    examYourScore: (correct, total) => `نتيجتك: ${correct} من ${total} صح`,
+    examPickAnswer: "اختار إجابة لكل سؤال قبل ما تسلّم.",
+    examConfirmSubmit: "متأكد عايز تسلّم؟ مش هتقدر تغيّر إجاباتك بعد كده.",
     uploadFile: "ارفع فيديو أو PDF",
     uploading: (pct) => `بيترفع... ${pct}%`,
     uploadError: "حصل خطأ في الرفع، جرب تاني",
@@ -136,6 +159,14 @@ const T = {
     whoCanSee: "مين يقدر يشوف الدرس ده؟",
     allStudentsOpt: "كل الطلاب",
     noStudentsToPick: "ضيف طلاب الأول عشان تقدر تحدد مين يشوف الدرس.",
+    specificClasses: "فصول محددة",
+    specificStudents: "طلاب محددين (زيادة عن الفصول)",
+    noClassesYet: "لسه مفيش فصول. تقدر تحدد طلاب بالاسم بدل كده.",
+    visibleToClasses: (n) => `${n} فصل`,
+    examDuration: "مدة الامتحان بالدقايق (اختياري، سيبها فاضية لو مفيش وقت محدد)",
+    examDurationPh: "مثال: 30",
+    examTimeLeft: (mmss) => `الوقت المتبقي: ${mmss}`,
+    examTimeUp: "خلص الوقت! الامتحان اتقفل تلقائي وتم تسليمه.",
     studyingWell: "بيذاكر كويس",
     needsFollowup: "محتاج متابعة",
     notStudied: "لسه ماذاكرش",
@@ -206,6 +237,29 @@ const T = {
     addLesson: "Add lesson",
     noLessons: "No lessons added yet.",
     noCategory: "Uncategorized",
+    typeVideo: "Video",
+    typePdf: "PDF",
+    typeText: "Written lesson",
+    typeExam: "Exam",
+    lessonPdfUrl: "PDF link (Google Drive)",
+    lessonPdfUrlPh: "https://drive.google.com/...",
+    lessonContent: "Lesson content",
+    lessonContentPh: "Write the lesson content here...",
+    examQuestions: "Exam questions",
+    addQuestion: "Add question",
+    questionText: "Question text",
+    questionTextPh: "Type the question here",
+    optionText: (n) => `Option ${n}`,
+    addOption: "Add option",
+    markCorrect: "Correct answer",
+    removeQuestion: "Delete question",
+    needAtLeastOneQuestion: "Add at least one question before saving the exam.",
+    questionsCount: (n) => `${n} question(s)`,
+    submitExam: "Submit exam",
+    examAlreadySubmitted: "You already submitted this exam",
+    examYourScore: (correct, total) => `Your score: ${correct} of ${total} correct`,
+    examPickAnswer: "Pick an answer for every question before submitting.",
+    examConfirmSubmit: "Sure you want to submit? You won't be able to change your answers after this.",
     uploadFile: "Upload video or PDF",
     uploading: (pct) => `Uploading... ${pct}%`,
     uploadError: "Upload failed, try again",
@@ -217,6 +271,14 @@ const T = {
     whoCanSee: "Who can see this lesson?",
     allStudentsOpt: "All students",
     noStudentsToPick: "Add students first so you can choose who sees this lesson.",
+    specificClasses: "Specific classes",
+    specificStudents: "Specific students (in addition to classes)",
+    noClassesYet: "No classes yet. You can pick students by name instead.",
+    visibleToClasses: (n) => `${n} class(es)`,
+    examDuration: "Exam duration in minutes (optional, leave blank for no time limit)",
+    examDurationPh: "e.g. 30",
+    examTimeLeft: (mmss) => `Time left: ${mmss}`,
+    examTimeUp: "Time's up! The exam was locked and submitted automatically.",
     studyingWell: "Studying well",
     needsFollowup: "Needs follow-up",
     notStudied: "Hasn't started",
@@ -287,6 +349,29 @@ const T = {
     addLesson: "Ajouter le cours",
     noLessons: "Aucun cours ajouté pour l'instant.",
     noCategory: "Sans catégorie",
+    typeVideo: "Vidéo",
+    typePdf: "PDF",
+    typeText: "Cours écrit",
+    typeExam: "Examen",
+    lessonPdfUrl: "Lien du PDF (Google Drive)",
+    lessonPdfUrlPh: "https://drive.google.com/...",
+    lessonContent: "Contenu du cours",
+    lessonContentPh: "Écrivez le contenu du cours ici...",
+    examQuestions: "Questions de l'examen",
+    addQuestion: "Ajouter une question",
+    questionText: "Texte de la question",
+    questionTextPh: "Écrivez la question ici",
+    optionText: (n) => `Choix ${n}`,
+    addOption: "Ajouter un choix",
+    markCorrect: "Bonne réponse",
+    removeQuestion: "Supprimer la question",
+    needAtLeastOneQuestion: "Ajoutez au moins une question avant d'enregistrer l'examen.",
+    questionsCount: (n) => `${n} question(s)`,
+    submitExam: "Soumettre l'examen",
+    examAlreadySubmitted: "Vous avez déjà soumis cet examen",
+    examYourScore: (correct, total) => `Votre score : ${correct} sur ${total} correctes`,
+    examPickAnswer: "Choisissez une réponse à chaque question avant de soumettre.",
+    examConfirmSubmit: "Sûr de vouloir soumettre ? Vous ne pourrez plus modifier vos réponses après.",
     uploadFile: "Importer une vidéo ou un PDF",
     uploading: (pct) => `Envoi... ${pct}%`,
     uploadError: "Échec de l'envoi, réessayez",
@@ -298,6 +383,14 @@ const T = {
     whoCanSee: "Qui peut voir ce cours ?",
     allStudentsOpt: "Tous les élèves",
     noStudentsToPick: "Ajoutez des élèves d'abord pour choisir qui voit ce cours.",
+    specificClasses: "Classes spécifiques",
+    specificStudents: "Élèves spécifiques (en plus des classes)",
+    noClassesYet: "Aucune classe pour l'instant. Choisissez des élèves par nom à la place.",
+    visibleToClasses: (n) => `${n} classe(s)`,
+    examDuration: "Durée de l'examen en minutes (optionnel, laissez vide pour aucune limite)",
+    examDurationPh: "ex : 30",
+    examTimeLeft: (mmss) => `Temps restant : ${mmss}`,
+    examTimeUp: "Temps écoulé ! L'examen a été verrouillé et soumis automatiquement.",
     studyingWell: "Étudie bien",
     needsFollowup: "À suivre",
     notStudied: "Pas encore commencé",
@@ -618,7 +711,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
           {tab === "dashboard" && <DashboardTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} goTo={setTab} />}
           {tab === "classes" && <ClassesTab t={t} classes={classes} setClasses={setClasses} students={students} />}
           {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} classes={classes} />}
-          {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} />}
+          {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} />}
           {tab === "progress" && <ProgressTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} />}
           {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
         </div>
@@ -651,7 +744,7 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
   const overallPct = useMemo(() => {
     if (students.length === 0 || lessons.length === 0) return 0;
     const total = students.reduce((sum, s) => {
-      const visible = lessons.filter((l) => !l.visibleTo || l.visibleTo.length === 0 || l.visibleTo.includes(s.id));
+      const visible = lessons.filter((l) => lessonVisibleToStudent(l, s));
       return sum + studentStats(s.id, visible, progress).pct;
     }, 0);
     return Math.round(total / students.length);
@@ -660,7 +753,7 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
   const topStudents = useMemo(() => {
     return students
       .map((s) => {
-        const visible = lessons.filter((l) => !l.visibleTo || l.visibleTo.length === 0 || l.visibleTo.includes(s.id));
+        const visible = lessons.filter((l) => lessonVisibleToStudent(l, s));
         return { ...s, stats: studentStats(s.id, visible, progress) };
       })
       .sort((a, b) => b.stats.pct - a.stats.pct)
@@ -894,14 +987,29 @@ function StudentsTab({ t, students, setStudents, classes }) {
   );
 }
 
-function LessonVisibilityPicker({ t, students, value, onChange }) {
+function LessonVisibilityPicker({ t, students, classes, value, onChange }) {
   const [open, setOpen] = useState(false);
-  const isAll = !value || value.length === 0;
-  const toggleStudent = (id) => {
-    const current = value || [];
-    const next = current.includes(id) ? current.filter((x) => x !== id) : [...current, id];
-    onChange(next.length === 0 ? null : next);
+  const classIds = value?.classIds || [];
+  const studentIds = value?.studentIds || [];
+  const isAll = classIds.length === 0 && studentIds.length === 0;
+
+  const emit = (nextClassIds, nextStudentIds) => {
+    if (nextClassIds.length === 0 && nextStudentIds.length === 0) onChange(null);
+    else onChange({ classIds: nextClassIds, studentIds: nextStudentIds });
   };
+  const toggleClass = (id) => {
+    const next = classIds.includes(id) ? classIds.filter((x) => x !== id) : [...classIds, id];
+    emit(next, studentIds);
+  };
+  const toggleStudent = (id) => {
+    const next = studentIds.includes(id) ? studentIds.filter((x) => x !== id) : [...studentIds, id];
+    emit(classIds, next);
+  };
+
+  const summary = isAll
+    ? t.visibleToAll
+    : [classIds.length ? t.visibleToClasses(classIds.length) : null, studentIds.length ? t.visibleToSome(studentIds.length) : null].filter(Boolean).join(" + ");
+
   return (
     <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 10 }}>
       <button
@@ -910,40 +1018,174 @@ function LessonVisibilityPicker({ t, students, value, onChange }) {
         style={{ background: "none", border: "none", cursor: "pointer", color: isAll ? COLORS.chalkBlue : COLORS.chalkYellow, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, width: "100%", justifyContent: "space-between" }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <Users size={14} /> {isAll ? t.visibleToAll : t.visibleToSome(value.length)}
+          <Users size={14} /> {summary}
         </span>
         <span style={{ fontSize: 11, color: COLORS.chalkDim }}>{t.whoCanSee}</span>
       </button>
       {open && (
-        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: COLORS.chalk, cursor: "pointer" }}>
-            <input type="checkbox" checked={isAll} onChange={() => onChange(null)} />
+            <input type="checkbox" checked={isAll} onChange={() => emit([], [])} />
             {t.allStudentsOpt}
           </label>
-          {students.length === 0 ? (
-            <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.noStudentsToPick}</div>
-          ) : (
-            students.map((s) => (
-              <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: COLORS.chalk, cursor: "pointer" }}>
-                <input type="checkbox" checked={!isAll && (value || []).includes(s.id)} onChange={() => toggleStudent(s.id)} />
-                {s.name}
-              </label>
-            ))
-          )}
+
+          <div>
+            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>{t.specificClasses}</div>
+            {(classes || []).length === 0 ? (
+              <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.noClassesYet}</div>
+            ) : (
+              (classes || []).map((c) => (
+                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: COLORS.chalk, cursor: "pointer" }}>
+                  <input type="checkbox" checked={classIds.includes(c.id)} onChange={() => toggleClass(c.id)} />
+                  {c.name}
+                </label>
+              ))
+            )}
+          </div>
+
+          <div>
+            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>{t.specificStudents}</div>
+            {students.length === 0 ? (
+              <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.noStudentsToPick}</div>
+            ) : (
+              students.map((s) => (
+                <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: COLORS.chalk, cursor: "pointer" }}>
+                  <input type="checkbox" checked={studentIds.includes(s.id)} onChange={() => toggleStudent(s.id)} />
+                  {s.name}
+                </label>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function LessonsTab({ t, lessons, setLessons, students }) {
-  const [form, setForm] = useState({ title: "", category: "", desc: "", url: "", visibleTo: null });
+const LESSON_TYPES = [
+  { id: "video", icon: <Video size={15} /> },
+  { id: "pdf", icon: <FileText size={15} /> },
+  { id: "text", icon: <PenLine size={15} /> },
+  { id: "exam", icon: <ListChecks size={15} /> },
+];
+function lessonTypeLabel(t, type) {
+  return { video: t.typeVideo, pdf: t.typePdf, text: t.typeText, exam: t.typeExam }[type || "video"];
+}
+function lessonTypeIcon(type, size = 15) {
+  const map = { video: <Video size={size} />, pdf: <FileText size={size} />, text: <PenLine size={size} />, exam: <ListChecks size={size} /> };
+  return map[type || "video"];
+}
+
+function emptyQuestion() {
+  return {
+    id: uid(),
+    text: "",
+    options: [
+      { id: uid(), text: "" },
+      { id: uid(), text: "" },
+    ],
+    correctOptionId: null,
+  };
+}
+
+function ExamBuilder({ t, questions, setQuestions }) {
+  const addQuestion = () => setQuestions([...questions, emptyQuestion()]);
+  const removeQuestion = (qid) => setQuestions(questions.filter((q) => q.id !== qid));
+  const updateQuestion = (qid, patch) => setQuestions(questions.map((q) => (q.id === qid ? { ...q, ...patch } : q)));
+  const addOption = (qid) => updateQuestion(qid, { options: [...questions.find((q) => q.id === qid).options, { id: uid(), text: "" }] });
+  const updateOption = (qid, oid, text) => {
+    const q = questions.find((q) => q.id === qid);
+    updateQuestion(qid, { options: q.options.map((o) => (o.id === oid ? { ...o, text } : o)) });
+  };
+  const removeOption = (qid, oid) => {
+    const q = questions.find((q) => q.id === qid);
+    updateQuestion(qid, {
+      options: q.options.filter((o) => o.id !== oid),
+      correctOptionId: q.correctOptionId === oid ? null : q.correctOptionId,
+    });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.examQuestions}</div>
+      {questions.map((q, qi) => (
+        <div key={q.id} style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <div style={{ flex: 1 }}>
+              <ChalkInput
+                label={`${t.questionText} #${qi + 1}`}
+                value={q.text}
+                onChange={(e) => updateQuestion(q.id, { text: e.target.value })}
+                placeholder={t.questionTextPh}
+              />
+            </div>
+            <button type="button" onClick={() => removeQuestion(q.id)} style={{ ...iconBtnStyle, marginTop: 22 }} title={t.removeQuestion}>
+              <Trash2 size={16} color={COLORS.chalkPink} />
+            </button>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {q.options.map((o, oi) => (
+              <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  type="radio"
+                  name={`correct-${q.id}`}
+                  checked={q.correctOptionId === o.id}
+                  onChange={() => updateQuestion(q.id, { correctOptionId: o.id })}
+                  title={t.markCorrect}
+                />
+                <input
+                  value={o.text}
+                  onChange={(e) => updateOption(q.id, o.id, e.target.value)}
+                  placeholder={t.optionText(oi + 1)}
+                  style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                />
+                {q.options.length > 2 && (
+                  <button type="button" onClick={() => removeOption(q.id, o.id)} style={iconBtnStyle}>
+                    <X size={14} color={COLORS.chalkDim} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => addOption(q.id)}
+              style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}
+            >
+              + {t.addOption}
+            </button>
+          </div>
+        </div>
+      ))}
+      <ChalkButton type="button" variant="outline" color={COLORS.chalkBlue} onClick={addQuestion} style={{ alignSelf: "flex-start" }}>
+        <Plus size={15} /> {t.addQuestion}
+      </ChalkButton>
+    </div>
+  );
+}
+
+const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", questions: [], durationMinutes: "", visibleTo: null };
+
+function LessonsTab({ t, lessons, setLessons, students, classes }) {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_LESSON_FORM);
 
   const add = (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    setLessons([...lessons, { id: uid(), ...form, category: form.category.trim() || t.noCategory, createdAt: new Date().toISOString() }]);
-    setForm({ title: "", category: "", desc: "", url: "", visibleTo: null });
+    if (form.type === "exam" && form.questions.length === 0) {
+      alert(t.needAtLeastOneQuestion);
+      return;
+    }
+    const base = { id: uid(), title: form.title, category: form.category.trim() || t.noCategory, desc: form.desc, type: form.type, visibleTo: form.visibleTo, createdAt: new Date().toISOString() };
+    if (form.type === "video" || form.type === "pdf") base.url = form.url;
+    if (form.type === "text") base.content = form.content;
+    if (form.type === "exam") {
+      base.questions = form.questions;
+      base.durationMinutes = form.durationMinutes ? Number(form.durationMinutes) : null;
+    }
+    setLessons([...lessons, base]);
+    setForm(EMPTY_LESSON_FORM);
+    setShowForm(false);
   };
   const remove = (id) => setLessons(lessons.filter((l) => l.id !== id));
 
@@ -955,7 +1197,38 @@ function LessonsTab({ t, lessons, setLessons, students }) {
 
   return (
     <div>
+      {!showForm && (
+        <ChalkButton type="button" color={COLORS.chalkYellow} onClick={() => setShowForm(true)} style={{ marginBottom: 20 }}>
+          <Plus size={16} /> {t.addLesson}
+        </ChalkButton>
+      )}
+      {showForm && (
       <form onSubmit={add} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {LESSON_TYPES.map((lt) => (
+            <button
+              key={lt.id}
+              type="button"
+              onClick={() => setForm({ ...form, type: lt.id })}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 14px",
+                borderRadius: 20,
+                border: `1.5px solid ${form.type === lt.id ? COLORS.chalkYellow : "rgba(201,162,39,0.3)"}`,
+                background: form.type === lt.id ? "rgba(201,162,39,0.14)" : "transparent",
+                color: form.type === lt.id ? COLORS.chalkYellow : COLORS.chalkDim,
+                cursor: "pointer",
+                fontFamily: "Cairo, sans-serif",
+                fontWeight: 700,
+                fontSize: 13.5,
+              }}
+            >
+              {lt.icon} {lessonTypeLabel(t, lt.id)}
+            </button>
+          ))}
+        </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: 2, minWidth: 180 }}>
             <ChalkInput label={t.lessonTitle} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t.lessonTitlePh} />
@@ -964,15 +1237,44 @@ function LessonsTab({ t, lessons, setLessons, students }) {
             <ChalkInput label={t.category} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder={t.categoryPh} />
           </div>
         </div>
-        <ChalkInput label={t.lessonUrl} icon={<Link2 size={16} color={COLORS.chalkDim} />} value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder={t.lessonUrlPh} dir="ltr" />
+
+        {form.type === "video" && (
+          <ChalkInput label={t.lessonUrl} icon={<Link2 size={16} color={COLORS.chalkDim} />} value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder={t.lessonUrlPh} dir="ltr" />
+        )}
+        {form.type === "pdf" && (
+          <ChalkInput label={t.lessonPdfUrl} icon={<FileText size={16} color={COLORS.chalkDim} />} value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder={t.lessonPdfUrlPh} dir="ltr" />
+        )}
+        {form.type === "text" && (
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
+            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.lessonContent}</span>
+            <textarea
+              value={form.content}
+              onChange={(e) => setForm({ ...form, content: e.target.value })}
+              placeholder={t.lessonContentPh}
+              rows={5}
+              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15, resize: "vertical" }}
+            />
+          </label>
+        )}
+        {form.type === "exam" && (
+          <>
+            <ChalkInput label={t.examDuration} value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value.replace(/[^0-9]/g, "") })} placeholder={t.examDurationPh} dir="ltr" />
+            <ExamBuilder t={t} questions={form.questions} setQuestions={(qs) => setForm({ ...form, questions: qs })} />
+          </>
+        )}
+
         <ChalkInput label={t.lessonDesc} value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.lessonDescPh} />
-        <LessonVisibilityPicker t={t} students={students} value={form.visibleTo} onChange={(v) => setForm({ ...form, visibleTo: v })} />
-        <div>
+        <LessonVisibilityPicker t={t} students={students} classes={classes} value={form.visibleTo} onChange={(v) => setForm({ ...form, visibleTo: v })} />
+        <div style={{ display: "flex", gap: 10 }}>
           <ChalkButton type="submit" color={COLORS.chalkYellow}>
             <Plus size={16} /> {t.addLesson}
           </ChalkButton>
+          <ChalkButton type="button" variant="outline" color={COLORS.chalkDim} onClick={() => { setShowForm(false); setForm(EMPTY_LESSON_FORM); }}>
+            <X size={15} /> {t.back}
+          </ChalkButton>
         </div>
       </form>
+      )}
 
       {lessons.length === 0 ? (
         <EmptyNote text={t.noLessons} />
@@ -985,6 +1287,10 @@ function LessonsTab({ t, lessons, setLessons, students }) {
                 <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
+                      <div style={{ color: COLORS.chalkBlue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                        {lessonTypeIcon(l.type, 12)} {lessonTypeLabel(t, l.type)}
+                        {l.type === "exam" && ` · ${t.questionsCount((l.questions || []).length)}`}
+                      </div>
                       <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
                       {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
                     </div>
@@ -995,6 +1301,7 @@ function LessonsTab({ t, lessons, setLessons, students }) {
                   <LessonVisibilityPicker
                     t={t}
                     students={students}
+                    classes={classes}
                     value={l.visibleTo}
                     onChange={(v) => setLessons(lessons.map((x) => (x.id === l.id ? { ...x, visibleTo: v } : x)))}
                   />
@@ -1006,6 +1313,17 @@ function LessonsTab({ t, lessons, setLessons, students }) {
       )}
     </div>
   );
+}
+
+function lessonVisibleToStudent(lesson, student) {
+  const v = lesson.visibleTo;
+  if (!v) return true;
+  const classIds = v.classIds || [];
+  const studentIds = v.studentIds || [];
+  if (classIds.length === 0 && studentIds.length === 0) return true;
+  if (student.classId && classIds.includes(student.classId)) return true;
+  if (studentIds.includes(student.id)) return true;
+  return false;
 }
 
 function studentStats(studentId, lessons, progress) {
@@ -1025,7 +1343,7 @@ function ProgressTab({ t, lang, students, lessons, progress }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {students.map((s) => {
-        const visibleForStudent = lessons.filter((l) => !l.visibleTo || l.visibleTo.length === 0 || l.visibleTo.includes(s.id));
+        const visibleForStudent = lessons.filter((l) => lessonVisibleToStudent(l, s));
         const stats = studentStats(s.id, visibleForStudent, progress);
         let badgeColor = COLORS.chalkPink;
         let badgeText = t.notStudied;
@@ -1093,10 +1411,92 @@ function StudentLogin({ students, onFound, onTeacher, lang, setLang }) {
   );
 }
 
+function ExamTaker({ t, lesson, entry, onStart, onSubmit }) {
+  const questions = lesson.questions || [];
+  const [answers, setAnswers] = useState(entry?.examAnswers || {});
+  const [startedAt] = useState(() => entry?.examStartedAt || new Date().toISOString());
+  const [remaining, setRemaining] = useState(null);
+  const submittedRef = useRef(false);
+  const durationMs = lesson.durationMinutes ? lesson.durationMinutes * 60 * 1000 : null;
+
+  useEffect(() => {
+    if (!entry?.examStartedAt) onStart(startedAt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const doSubmit = (finalAnswers) => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    let correct = 0;
+    questions.forEach((q) => { if (finalAnswers[q.id] && finalAnswers[q.id] === q.correctOptionId) correct++; });
+    onSubmit(finalAnswers, { correct, total: questions.length });
+  };
+
+  useEffect(() => {
+    if (!durationMs || entry?.examScore) return;
+    const tick = () => {
+      const elapsed = Date.now() - new Date(startedAt).getTime();
+      const left = Math.max(0, Math.round((durationMs - elapsed) / 1000));
+      setRemaining(left);
+      if (left <= 0) doSubmit(answers);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [durationMs, entry?.examScore]);
+
+  if (entry?.examScore) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5 }}>{t.examAlreadySubmitted}</div>
+        <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 15 }}>{t.examYourScore(entry.examScore.correct, entry.examScore.total)}</div>
+      </div>
+    );
+  }
+
+  const handleSubmitClick = () => {
+    if (Object.keys(answers).length < questions.length) {
+      if (!window.confirm(t.examPickAnswer)) return;
+    } else if (!window.confirm(t.examConfirmSubmit)) {
+      return;
+    }
+    doSubmit(answers);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {durationMs != null && remaining != null && (
+        <div style={{ color: remaining < 60 ? COLORS.chalkPink : COLORS.chalkDim, fontSize: 13, fontWeight: 700 }}>
+          {t.examTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`)}
+        </div>
+      )}
+      {questions.map((q, qi) => (
+        <div key={q.id} style={{ border: `1px solid rgba(201,162,39,0.25)`, borderRadius: 8, padding: 10 }}>
+          <div style={{ color: COLORS.chalk, fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+            {qi + 1}. {q.text}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {q.options.map((o) => (
+              <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: COLORS.chalkDim, cursor: "pointer" }}>
+                <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === o.id} onChange={() => setAnswers({ ...answers, [q.id]: o.id })} />
+                {o.text}
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      <ChalkButton type="button" color={COLORS.chalkYellow} onClick={handleSubmitClick}>
+        {t.submitExam}
+      </ChalkButton>
+    </div>
+  );
+}
+
 function StudentDashboard({ back, student, lessons, progress, setProgress, lang, setLang }) {
   const t = T[lang];
   const visibleLessons = useMemo(
-    () => lessons.filter((l) => !l.visibleTo || l.visibleTo.length === 0 || l.visibleTo.includes(student.id)),
+    () => lessons.filter((l) => lessonVisibleToStudent(l, student)),
     [lessons, student.id]
   );
   const stats = studentStats(student.id, visibleLessons, progress);
@@ -1110,6 +1510,18 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
     const mine = { ...(progress[student.id] || {}) };
     const isWatched = mine[lessonId] && mine[lessonId].watched;
     mine[lessonId] = isWatched ? { watched: false } : { watched: true, watchedAt: new Date().toISOString() };
+    setProgress({ ...progress, [student.id]: mine });
+  };
+
+  const startExam = (lessonId, startedAt) => {
+    const mine = { ...(progress[student.id] || {}) };
+    mine[lessonId] = { ...(mine[lessonId] || {}), examStartedAt: startedAt };
+    setProgress({ ...progress, [student.id]: mine });
+  };
+
+  const submitExam = (lessonId, answers, score) => {
+    const mine = { ...(progress[student.id] || {}) };
+    mine[lessonId] = { ...(mine[lessonId] || {}), watched: true, watchedAt: new Date().toISOString(), examAnswers: answers, examScore: score };
     setProgress({ ...progress, [student.id]: mine });
   };
 
@@ -1136,7 +1548,46 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
             <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{cat}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {items.map((l) => {
-                const watched = progress[student.id] && progress[student.id][l.id] && progress[student.id][l.id].watched;
+                const type = l.type || "video";
+                const entry = (progress[student.id] && progress[student.id][l.id]) || null;
+                const watched = entry && entry.watched;
+
+                if (type === "exam") {
+                  return (
+                    <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        {lessonTypeIcon("exam", 16)}
+                        <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
+                      </div>
+                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
+                      <ExamTaker t={t} lesson={l} entry={entry} onStart={(startedAt) => startExam(l.id, startedAt)} onSubmit={(answers, score) => submitExam(l.id, answers, score)} />
+                    </div>
+                  );
+                }
+
+                if (type === "text") {
+                  return (
+                    <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                        <button onClick={() => toggleWatched(l.id)} style={iconBtnStyle}>
+                          {watched ? <CheckCircle2 size={20} color={COLORS.chalkBlue} /> : <Circle size={20} color={COLORS.chalkDim} />}
+                        </button>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
+                            {lessonTypeIcon("text", 14)} {l.title}
+                          </div>
+                          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
+                          {watched && entry.watchedAt && (
+                            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
+                          )}
+                          <div style={{ color: COLORS.chalk, fontSize: 14, marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // video / pdf
                 const embed = toEmbedUrl(l.url);
                 return (
                   <div key={l.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10, flexDirection: "column", alignItems: "stretch" }}>
@@ -1146,16 +1597,18 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                           {watched ? <CheckCircle2 size={20} color={COLORS.chalkBlue} /> : <Circle size={20} color={COLORS.chalkDim} />}
                         </button>
                         <div>
-                          <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1 }}>{l.title}</div>
+                          <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
+                            {lessonTypeIcon(type, 14)} {l.title}
+                          </div>
                           {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
-                          {watched && progress[student.id][l.id].watchedAt && (
-                            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, marginTop: 2 }}>{t.studiedOn(fmtDate(progress[student.id][l.id].watchedAt, lang))}</div>
+                          {watched && entry.watchedAt && (
+                            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
                           )}
                         </div>
                       </div>
                       {l.url && !embed && (
                         <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                          {t.openLesson} <ExternalLink size={14} />
+                          {type === "pdf" ? t.openPdf : t.openLesson} <ExternalLink size={14} />
                         </a>
                       )}
                     </div>
@@ -1165,7 +1618,7 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                         title={l.title}
                         allow="autoplay; encrypted-media; fullscreen"
                         allowFullScreen
-                        style={{ width: "100%", maxWidth: 480, aspectRatio: "16/9", border: "none", borderRadius: 8, marginRight: 34 }}
+                        style={{ width: "100%", maxWidth: 480, aspectRatio: type === "pdf" ? "3/4" : "16/9", border: "none", borderRadius: 8, marginRight: 34 }}
                       />
                     )}
                   </div>
