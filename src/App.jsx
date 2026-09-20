@@ -516,8 +516,8 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
         .admin-content { flex: 1; min-width: 0; }
         @media (max-width: 680px) {
           .admin-layout { flex-direction: column; }
-          .admin-sidebar { flex-direction: row; flex: 0 0 auto; min-width: 0; width: 100%; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
-          .admin-sidebar button { white-space: nowrap; flex: 0 0 auto; }
+          .admin-sidebar { flex-direction: column; flex: 0 0 auto; min-width: 0; width: 100%; }
+          .admin-sidebar button { width: 100%; }
         }
       `}</style>
       <div className="admin-layout">
