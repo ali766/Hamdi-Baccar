@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X } from "lucide-react";
 import {
   subscribeToStudents,
@@ -494,6 +495,45 @@ function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
   );
 }
 
+function MobileDrawer({ open, onClose, lang, children }) {
+  const dir = lang === "ar" ? "rtl" : "ltr";
+  const hiddenTransform = dir === "rtl" ? "translateX(100%)" : "translateX(-100%)";
+  return createPortal(
+    <div dir={dir} style={{ position: "fixed", inset: 0, zIndex: 9999, visibility: open ? "visible" : "hidden" }}>
+      <div
+        onClick={onClose}
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "rgba(0,0,0,0.6)",
+          opacity: open ? 1 : 0,
+          transition: "opacity 0.25s ease",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          insetInlineStart: 0,
+          width: "min(78vw, 300px)",
+          background: `linear-gradient(180deg, ${COLORS.board} 0%, ${COLORS.boardDark} 100%)`,
+          borderInlineEnd: `2px solid ${COLORS.frame}`,
+          boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+          transform: open ? "translateX(0)" : hiddenTransform,
+          transition: "transform 0.28s ease",
+          padding: "22px 16px",
+          overflowY: "auto",
+          fontFamily: "Cairo, sans-serif",
+        }}
+      >
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function AdminDashboard({ back, students, setStudents, lessons, setLessons, classes, setClasses, progress, adminPass, setAdminPass, lang, setLang }) {
   const t = T[lang];
   const [tab, setTab] = useState("dashboard");
@@ -507,6 +547,33 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
     { id: "settings", label: t.tabSettings, icon: <Settings size={16} /> },
   ];
   const currentTab = tabs.find((tb) => tb.id === tab);
+
+  const navButtonStyle = (id) => ({
+    background: tab === id ? "rgba(201,162,39,0.14)" : "none",
+    border: "none",
+    borderInlineStart: tab === id ? `3px solid ${COLORS.chalkYellow}` : "3px solid transparent",
+    cursor: "pointer",
+    color: tab === id ? COLORS.chalkYellow : COLORS.chalkDim,
+    fontFamily: "Cairo, sans-serif",
+    fontWeight: 700,
+    fontSize: 15,
+    padding: "10px 14px",
+    borderRadius: 8,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    width: "100%",
+    textAlign: "start",
+    justifyContent: "flex-start",
+  });
+
+  const renderNavButtons = (afterClick) =>
+    tabs.map((tb) => (
+      <button key={tb.id} onClick={() => { setTab(tb.id); afterClick && afterClick(); }} style={navButtonStyle(tb.id)}>
+        {tb.icon} {tb.label}
+      </button>
+    ));
+
   return (
     <Board lang={lang}>
       <TopBar back={back} label={t.logout} lang={lang} setLang={setLang} />
@@ -514,20 +581,16 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
       <style>{`
         .admin-layout { display: flex; gap: 24px; align-items: flex-start; }
         .admin-sidebar { display: flex; flex-direction: column; gap: 4px; flex: 0 0 190px; min-width: 190px; }
-        .admin-sidebar button { justify-content: flex-start; text-align: start; }
         .admin-content { flex: 1; min-width: 0; }
         .admin-hamburger { display: none; }
         @media (max-width: 680px) {
-          .admin-layout { flex-direction: column; }
+          .admin-sidebar { display: none; }
           .admin-hamburger { display: flex; }
-          .admin-sidebar { flex-direction: column; flex: 0 0 auto; min-width: 0; width: 100%; }
-          .admin-sidebar button { width: 100%; }
-          .admin-sidebar.closed { display: none; }
         }
       `}</style>
       <button
         className="admin-hamburger"
-        onClick={() => setNavOpen(!navOpen)}
+        onClick={() => setNavOpen(true)}
         style={{
           width: "100%",
           alignItems: "center",
@@ -547,34 +610,10 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {currentTab?.icon} {currentTab?.label}
         </span>
-        {navOpen ? <X size={18} /> : <Menu size={18} />}
+        <Menu size={18} />
       </button>
       <div className="admin-layout">
-        <nav className={`admin-sidebar${navOpen ? "" : " closed"}`}>
-          {tabs.map((tb) => (
-            <button
-              key={tb.id}
-              onClick={() => { setTab(tb.id); setNavOpen(false); }}
-              style={{
-                background: tab === tb.id ? "rgba(201,162,39,0.14)" : "none",
-                border: "none",
-                borderInlineStart: tab === tb.id ? `3px solid ${COLORS.chalkYellow}` : "3px solid transparent",
-                cursor: "pointer",
-                color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim,
-                fontFamily: "Cairo, sans-serif",
-                fontWeight: 700,
-                fontSize: 15,
-                padding: "10px 14px",
-                borderRadius: 8,
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              {tb.icon} {tb.label}
-            </button>
-          ))}
-        </nav>
+        <nav className="admin-sidebar">{renderNavButtons()}</nav>
         <div className="admin-content">
           {tab === "dashboard" && <DashboardTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} goTo={setTab} />}
           {tab === "classes" && <ClassesTab t={t} classes={classes} setClasses={setClasses} students={students} />}
@@ -584,6 +623,16 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
           {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
         </div>
       </div>
+
+      <MobileDrawer open={navOpen} onClose={() => setNavOpen(false)} lang={lang}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+          <span style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 17, fontFamily: "'Playfair Display', serif" }}>{t.brand}</span>
+          <button onClick={() => setNavOpen(false)} style={iconBtnStyle}>
+            <X size={20} color={COLORS.chalkDim} />
+          </button>
+        </div>
+        <nav style={{ display: "flex", flexDirection: "column", gap: 4 }}>{renderNavButtons(() => setNavOpen(false))}</nav>
+      </MobileDrawer>
     </Board>
   );
 }
