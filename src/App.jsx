@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2 } from "lucide-react";
-import { subscribeToState, saveField } from "./firebase";
+import {
+  subscribeToStudents,
+  subscribeToLessons,
+  subscribeToProgress,
+  subscribeToSettings,
+  addStudent,
+  updateStudent,
+  deleteStudent,
+  addLesson,
+  updateLesson,
+  deleteLesson,
+  setProgressEntry,
+  setAdminPassword,
+} from "./firebase";
+
+function sameData(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 function toEmbedUrl(url) {
   if (!url) return null;
@@ -845,28 +862,75 @@ export default function App() {
   const [currentStudent, setCurrentStudent] = useState(null);
 
   useEffect(() => {
-    const unsub = subscribeToState((data) => {
-      setStudentsState(data.students || []);
-      setLessonsState(data.lessons || []);
-      setProgressState(data.progress || {});
-      setAdminPassState(data.adminPass || "2580");
-      setLoaded(true);
-      setConnError(false);
-    });
+    const got = { students: false, lessons: false, progress: false, settings: false };
+    const checkLoaded = () => {
+      if (got.students && got.lessons && got.progress && got.settings) {
+        setLoaded(true);
+        setConnError(false);
+      }
+    };
+    const unsub1 = subscribeToStudents((list) => { setStudentsState(list); got.students = true; checkLoaded(); });
+    const unsub2 = subscribeToLessons((list) => { setLessonsState(list); got.lessons = true; checkLoaded(); });
+    const unsub3 = subscribeToProgress((obj) => { setProgressState(obj); got.progress = true; checkLoaded(); });
+    const unsub4 = subscribeToSettings((s) => { setAdminPassState(s.adminPass || "2580"); got.settings = true; checkLoaded(); });
     const timeout = setTimeout(() => {
       if (!loaded) setConnError(true);
     }, 8000);
     return () => {
-      unsub();
+      unsub1();
+      unsub2();
+      unsub3();
+      unsub4();
       clearTimeout(timeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const setStudents = useCallback((v) => { setStudentsState(v); saveField("students", v); }, []);
-  const setLessons = useCallback((v) => { setLessonsState(v); saveField("lessons", v); }, []);
-  const setProgress = useCallback((v) => { setProgressState(v); saveField("progress", v); }, []);
-  const setAdminPass = useCallback((v) => { setAdminPassState(v); saveField("adminPass", v); }, []);
+  // Each setter below still takes the *whole* next array/object, exactly like the
+  // old single-document version — every tab component (StudentsTab, LessonsTab,
+  // StudentDashboard...) calls it the same way it always did. Under the hood it
+  // now diffs against the previous value and writes only the documents that
+  // actually changed, instead of rewriting one giant Firestore document.
+
+  const setStudents = useCallback((next) => {
+    setStudentsState((prev) => {
+      const nextIds = new Set(next.map((s) => s.id));
+      prev.forEach((s) => { if (!nextIds.has(s.id)) deleteStudent(s.id); });
+      next.forEach((s) => {
+        const old = prev.find((p) => p.id === s.id);
+        if (!old) addStudent(s);
+        else if (!sameData(old, s)) updateStudent(s.id, s);
+      });
+      return next;
+    });
+  }, []);
+
+  const setLessons = useCallback((next) => {
+    setLessonsState((prev) => {
+      const nextIds = new Set(next.map((l) => l.id));
+      prev.forEach((l) => { if (!nextIds.has(l.id)) deleteLesson(l.id); });
+      next.forEach((l) => {
+        const old = prev.find((p) => p.id === l.id);
+        if (!old) addLesson(l);
+        else if (!sameData(old, l)) updateLesson(l.id, l);
+      });
+      return next;
+    });
+  }, []);
+
+  const setProgress = useCallback((next) => {
+    setProgressState((prev) => {
+      Object.entries(next).forEach(([studentId, lessonsMap]) => {
+        const prevLessonsMap = prev[studentId] || {};
+        Object.entries(lessonsMap).forEach(([lessonId, data]) => {
+          if (!sameData(prevLessonsMap[lessonId], data)) setProgressEntry(studentId, lessonId, data);
+        });
+      });
+      return next;
+    });
+  }, []);
+
+  const setAdminPass = useCallback((v) => { setAdminPassState(v); setAdminPassword(v); }, []);
 
   if (!loaded) {
     return (
