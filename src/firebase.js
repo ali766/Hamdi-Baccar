@@ -8,6 +8,7 @@ export const db = getFirestore(app);
 const studentsCol = collection(db, "students");
 const lessonsCol = collection(db, "lessons");
 const progressCol = collection(db, "progress");
+const classesCol = collection(db, "classes");
 const settingsDocRef = doc(db, "settings", "main");
 
 const DEFAULT_ADMIN_PASS = "2580";
@@ -104,6 +105,38 @@ export async function setProgressEntry(studentId, lessonId, data) {
     await setDoc(doc(progressCol, id), { studentId, lessonId, ...data }, { merge: true });
   } catch (e) {
     console.error("setProgressEntry error:", e);
+  }
+}
+
+/* ---------- classes ---------- */
+
+export function subscribeToClasses(callback) {
+  return onSnapshot(
+    classesCol,
+    (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+    (err) => console.error("classes sync error:", err)
+  );
+}
+export async function addClass(cls) {
+  const { id, ...data } = cls;
+  try {
+    await setDoc(doc(classesCol, id), data);
+  } catch (e) {
+    console.error("addClass error:", e);
+  }
+}
+export async function updateClass(id, patch) {
+  try {
+    await setDoc(doc(classesCol, id), patch, { merge: true });
+  } catch (e) {
+    console.error("updateClass error:", e);
+  }
+}
+export async function deleteClass(id) {
+  try {
+    await deleteDoc(doc(classesCol, id));
+  } catch (e) {
+    console.error("deleteClass error:", e);
   }
 }
 
