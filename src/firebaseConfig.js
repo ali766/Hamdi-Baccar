@@ -9,5 +9,5 @@ export const firebaseConfig = {
   storageBucket: "hamdi-2013c.firebasestorage.app",
   messagingSenderId: "143963166404",
   appId: "1:143963166404:web:023299df53346947821b91",
-  measurementId: "G-ZSJMBEQVRY"
+  measurementId: "G-ZSJMBEQVRY",
 };
