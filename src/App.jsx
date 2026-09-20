@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2 } from "lucide-react";
+import { uploadToCloudinary } from "./cloudinary";
 import {
   subscribeToStudents,
   subscribeToLessons,
@@ -151,6 +152,8 @@ const T = {
     uploadFile: "ارفع فيديو أو PDF",
     uploading: (pct) => `بيترفع... ${pct}%`,
     uploadError: "حصل خطأ في الرفع، جرب تاني",
+    uploadNotConfigured: "خدمة الرفع لسه مش متظبطة، استخدم رابط بدالها دلوقتي",
+    fileUploaded: "اترفع بنجاح",
     orLink: "أو حط رابط بدل الرفع (يوتيوب، درايف، إلخ)",
     openPdf: "افتح الـ PDF",
     fileReady: (name) => `اترفع: ${name}`,
@@ -263,6 +266,8 @@ const T = {
     uploadFile: "Upload video or PDF",
     uploading: (pct) => `Uploading... ${pct}%`,
     uploadError: "Upload failed, try again",
+    uploadNotConfigured: "Upload isn't set up yet, use a link for now",
+    fileUploaded: "Uploaded successfully",
     orLink: "Or paste a link instead (YouTube, Drive, etc.)",
     openPdf: "Open PDF",
     fileReady: (name) => `Uploaded: ${name}`,
@@ -375,6 +380,8 @@ const T = {
     uploadFile: "Importer une vidéo ou un PDF",
     uploading: (pct) => `Envoi... ${pct}%`,
     uploadError: "Échec de l'envoi, réessayez",
+    uploadNotConfigured: "L'envoi n'est pas encore configuré, utilisez un lien pour l'instant",
+    fileUploaded: "Envoyé avec succès",
     orLink: "Ou collez un lien à la place (YouTube, Drive, etc.)",
     openPdf: "Ouvrir le PDF",
     fileReady: (name) => `Importé : ${name}`,
@@ -471,6 +478,8 @@ function Board({ lang, children }) {
         * { box-sizing: border-box; }
         input:focus { outline: none; }
         body { margin: 0; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin-icon { animation: spin 0.9s linear infinite; }
       `}</style>
       <div
         style={{
@@ -1163,6 +1172,49 @@ function ExamBuilder({ t, questions, setQuestions }) {
   );
 }
 
+function UploadField({ t, icon, value, onChange, accept, placeholder }) {
+  const [uploading, setUploading] = useState(false);
+  const [pct, setPct] = useState(0);
+  const [error, setError] = useState("");
+  const inputRef = useRef(null);
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    setPct(0);
+    try {
+      const url = await uploadToCloudinary(file, setPct);
+      onChange(url);
+    } catch (err) {
+      setError(err.message === "cloudinary-not-configured" ? t.uploadNotConfigured : t.uploadError);
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <ChalkButton type="button" variant="outline" color={COLORS.chalkYellow} onClick={() => inputRef.current?.click()} disabled={uploading}>
+          {uploading ? <Loader2 size={16} className="spin-icon" /> : <Upload size={16} />}
+          {uploading ? t.uploading(pct) : t.uploadFile}
+        </ChalkButton>
+        <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }} onChange={(e) => handleFile(e.target.files?.[0])} />
+        {value && !uploading && !error && (
+          <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, display: "flex", alignItems: "center", gap: 4 }}>
+            <CheckCircle2 size={14} /> {t.fileUploaded}
+          </div>
+        )}
+      </div>
+      {error && <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>{error}</div>}
+      <div style={{ color: COLORS.chalkDim, fontSize: 12 }}>{t.orLink}</div>
+      <ChalkInput icon={icon} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} dir="ltr" />
+    </div>
+  );
+}
+
 const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", questions: [], durationMinutes: "", visibleTo: null };
 
 function LessonsTab({ t, lessons, setLessons, students, classes }) {
@@ -1239,10 +1291,16 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
         </div>
 
         {form.type === "video" && (
-          <ChalkInput label={t.lessonUrl} icon={<Link2 size={16} color={COLORS.chalkDim} />} value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder={t.lessonUrlPh} dir="ltr" />
+          <div>
+            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonUrl}</span>
+            <UploadField t={t} icon={<Link2 size={16} color={COLORS.chalkDim} />} accept="video/*" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonUrlPh} />
+          </div>
         )}
         {form.type === "pdf" && (
-          <ChalkInput label={t.lessonPdfUrl} icon={<FileText size={16} color={COLORS.chalkDim} />} value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder={t.lessonPdfUrlPh} dir="ltr" />
+          <div>
+            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonPdfUrl}</span>
+            <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept="application/pdf" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonPdfUrlPh} />
+          </div>
         )}
         {form.type === "text" && (
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
