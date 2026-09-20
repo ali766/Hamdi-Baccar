@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap } from "lucide-react";
 import {
   subscribeToStudents,
   subscribeToLessons,
   subscribeToProgress,
   subscribeToSettings,
+  subscribeToClasses,
   addStudent,
   updateStudent,
   deleteStudent,
@@ -13,6 +14,9 @@ import {
   deleteLesson,
   setProgressEntry,
   setAdminPassword,
+  addClass,
+  updateClass,
+  deleteClass,
 } from "./firebase";
 
 function sameData(a, b) {
@@ -84,6 +88,15 @@ const T = {
     dashTopStudents: "الأكتر مذاكرة",
     dashRecentLessons: "آخر الدروس المضافة",
     dashNoData: "لسه مفيش بيانات كفاية.",
+    tabClasses: "الفصول",
+    className: "اسم الفصل",
+    classNamePh: "مثال: الصف الأول الثانوي",
+    addClass: "إضافة فصل",
+    noClasses: "لسه مفيش فصول. ضيف فصل من الفورم فوق.",
+    studentsInClass: (n) => `${n} طالب`,
+    assignClass: "الفصل",
+    noClassOpt: "بدون فصل",
+    deleteClassConfirm: "هتمسح الفصل ده؟ الطلاب فيه هيبقوا بدون فصل.",
     tabStudents: "الطلاب",
     tabLessons: "الدروس",
     tabProgress: "متابعة المذاكرة",
@@ -156,6 +169,15 @@ const T = {
     dashTopStudents: "Top Students",
     dashRecentLessons: "Recently Added Lessons",
     dashNoData: "Not enough data yet.",
+    tabClasses: "Classes",
+    className: "Class name",
+    classNamePh: "e.g. Grade 10",
+    addClass: "Add class",
+    noClasses: "No classes yet. Add one using the form above.",
+    studentsInClass: (n) => `${n} student(s)`,
+    assignClass: "Class",
+    noClassOpt: "No class",
+    deleteClassConfirm: "Delete this class? Its students will become unassigned.",
     tabStudents: "Students",
     tabLessons: "Lessons",
     tabProgress: "Progress",
@@ -228,6 +250,15 @@ const T = {
     dashTopStudents: "Meilleurs élèves",
     dashRecentLessons: "Derniers cours ajoutés",
     dashNoData: "Pas encore assez de données.",
+    tabClasses: "Classes",
+    className: "Nom de la classe",
+    classNamePh: "ex : 1ère année",
+    addClass: "Ajouter une classe",
+    noClasses: "Aucune classe pour l'instant. Ajoutez-en une ci-dessus.",
+    studentsInClass: (n) => `${n} élève(s)`,
+    assignClass: "Classe",
+    noClassOpt: "Aucune classe",
+    deleteClassConfirm: "Supprimer cette classe ? Ses élèves n'auront plus de classe.",
     tabStudents: "Élèves",
     tabLessons: "Cours",
     tabProgress: "Suivi",
@@ -463,11 +494,12 @@ function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
   );
 }
 
-function AdminDashboard({ back, students, setStudents, lessons, setLessons, progress, adminPass, setAdminPass, lang, setLang }) {
+function AdminDashboard({ back, students, setStudents, lessons, setLessons, classes, setClasses, progress, adminPass, setAdminPass, lang, setLang }) {
   const t = T[lang];
   const [tab, setTab] = useState("dashboard");
   const tabs = [
     { id: "dashboard", label: t.tabDashboard, icon: <LayoutDashboard size={16} /> },
+    { id: "classes", label: t.tabClasses, icon: <GraduationCap size={16} /> },
     { id: "students", label: t.tabStudents, icon: <Users size={16} /> },
     { id: "lessons", label: t.tabLessons, icon: <BookOpen size={16} /> },
     { id: "progress", label: t.tabProgress, icon: <ClipboardList size={16} /> },
@@ -477,23 +509,52 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, prog
     <Board lang={lang}>
       <TopBar back={back} label={t.logout} lang={lang} setLang={setLang} />
       <Title lang={lang}>{t.teacherDashboard}</Title>
-      <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 }}>
-        {tabs.map((tb) => (
-          <button
-            key={tb.id}
-            onClick={() => setTab(tb.id)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 15.5, padding: "8px 14px", borderBottom: tab === tb.id ? `2px solid ${COLORS.chalkYellow}` : "2px solid transparent", display: "flex", alignItems: "center", gap: 6 }}
-          >
-            {tb.icon} {tb.label}
-          </button>
-        ))}
+      <style>{`
+        .admin-layout { display: flex; gap: 24px; align-items: flex-start; }
+        .admin-sidebar { display: flex; flex-direction: column; gap: 4px; flex: 0 0 190px; min-width: 190px; }
+        .admin-sidebar button { justify-content: flex-start; text-align: start; }
+        .admin-content { flex: 1; min-width: 0; }
+        @media (max-width: 680px) {
+          .admin-layout { flex-direction: column; }
+          .admin-sidebar { flex-direction: row; flex: 0 0 auto; min-width: 0; width: 100%; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+          .admin-sidebar button { white-space: nowrap; flex: 0 0 auto; }
+        }
+      `}</style>
+      <div className="admin-layout">
+        <nav className="admin-sidebar">
+          {tabs.map((tb) => (
+            <button
+              key={tb.id}
+              onClick={() => setTab(tb.id)}
+              style={{
+                background: tab === tb.id ? "rgba(201,162,39,0.14)" : "none",
+                border: "none",
+                borderInlineStart: tab === tb.id ? `3px solid ${COLORS.chalkYellow}` : "3px solid transparent",
+                cursor: "pointer",
+                color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim,
+                fontFamily: "Cairo, sans-serif",
+                fontWeight: 700,
+                fontSize: 15,
+                padding: "10px 14px",
+                borderRadius: 8,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              {tb.icon} {tb.label}
+            </button>
+          ))}
+        </nav>
+        <div className="admin-content">
+          {tab === "dashboard" && <DashboardTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} goTo={setTab} />}
+          {tab === "classes" && <ClassesTab t={t} classes={classes} setClasses={setClasses} students={students} />}
+          {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} classes={classes} />}
+          {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} />}
+          {tab === "progress" && <ProgressTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} />}
+          {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
+        </div>
       </div>
-
-      {tab === "dashboard" && <DashboardTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} goTo={setTab} />}
-      {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} />}
-      {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} />}
-      {tab === "progress" && <ProgressTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} />}
-      {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
     </Board>
   );
 }
@@ -602,21 +663,72 @@ function SettingsTab({ t, adminPass, setAdminPass }) {
   );
 }
 
-function StudentsTab({ t, students, setStudents }) {
+function ClassesTab({ t, classes, setClasses, students }) {
+  const [name, setName] = useState("");
+
+  const add = (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setClasses([...classes, { id: uid(), name: name.trim(), createdAt: new Date().toISOString() }]);
+    setName("");
+  };
+  const remove = (id) => {
+    if (!window.confirm(t.deleteClassConfirm)) return;
+    setClasses(classes.filter((c) => c.id !== id));
+  };
+  const countFor = (classId) => students.filter((s) => s.classId === classId).length;
+
+  return (
+    <div>
+      <form onSubmit={add} style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 22, alignItems: "flex-end" }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <ChalkInput label={t.className} icon={<GraduationCap size={16} color={COLORS.chalkDim} />} value={name} onChange={(e) => setName(e.target.value)} placeholder={t.classNamePh} />
+        </div>
+        <ChalkButton type="submit" color={COLORS.chalkYellow}>
+          <Plus size={16} /> {t.addClass}
+        </ChalkButton>
+      </form>
+
+      {classes.length === 0 ? (
+        <EmptyNote text={t.noClasses} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {classes.map((c) => (
+            <div key={c.id} style={rowStyle}>
+              <div>
+                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{c.name}</div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{t.studentsInClass(countFor(c.id))}</div>
+              </div>
+              <button onClick={() => remove(c.id)} style={iconBtnStyle}>
+                <Trash2 size={16} color={COLORS.chalkPink} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StudentsTab({ t, students, setStudents, classes }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [classId, setClassId] = useState("");
   const [copiedId, setCopiedId] = useState(null);
 
   const add = (e) => {
     e.preventDefault();
     if (!name.trim() || !username.trim() || !password.trim()) return;
-    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), createdAt: new Date().toISOString() }]);
+    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), classId: classId || null, createdAt: new Date().toISOString() }]);
     setName("");
     setUsername("");
     setPassword("");
+    setClassId("");
   };
   const remove = (id) => setStudents(students.filter((s) => s.id !== id));
+  const setStudentClass = (id, cid) => setStudents(students.map((s) => (s.id === id ? { ...s, classId: cid || null } : s)));
+  const classNameFor = (cid) => (classes || []).find((c) => c.id === cid)?.name || null;
 
   const copyCreds = (s) => {
     const text = `${t.chooseUsername}: ${s.username}\n${t.password}: ${s.password}`;
@@ -638,6 +750,21 @@ function StudentsTab({ t, students, setStudents }) {
         <div style={{ flex: 1, minWidth: 160 }}>
           <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
         </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
+            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.assignClass}</span>
+            <select
+              value={classId}
+              onChange={(e) => setClassId(e.target.value)}
+              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
+            >
+              <option value="" style={{ color: "#000" }}>{t.noClassOpt}</option>
+              {(classes || []).map((c) => (
+                <option key={c.id} value={c.id} style={{ color: "#000" }}>{c.name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
         <ChalkButton type="button" variant="outline" color={COLORS.chalkBlue} onClick={() => setPassword(genPassword())}>
           {t.generatePass}
         </ChalkButton>
@@ -651,14 +778,29 @@ function StudentsTab({ t, students, setStudents }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {students.map((s) => (
-            <div key={s.id} style={rowStyle}>
+            <div key={s.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10 }}>
               <div>
                 <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{s.name}</div>
                 <div style={{ color: COLORS.chalkDim, fontSize: 14, direction: "ltr", textAlign: "right" }}>
                   {s.username} · {s.password}
                 </div>
+                {classNameFor(s.classId) && (
+                  <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                    <GraduationCap size={12} /> {classNameFor(s.classId)}
+                  </div>
+                )}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <select
+                  value={s.classId || ""}
+                  onChange={(e) => setStudentClass(s.id, e.target.value)}
+                  style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 8, padding: "6px 8px", color: COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontSize: 12.5 }}
+                >
+                  <option value="" style={{ color: "#000" }}>{t.noClassOpt}</option>
+                  {(classes || []).map((c) => (
+                    <option key={c.id} value={c.id} style={{ color: "#000" }}>{c.name}</option>
+                  ))}
+                </select>
                 <button onClick={() => copyCreds(s)} style={iconBtnStyle} title={t.copyCreds}>
                   {copiedId === s.id ? <Check size={16} color={COLORS.chalkBlue} /> : <Copy size={16} color={COLORS.chalkDim} />}
                 </button>
@@ -968,14 +1110,15 @@ export default function App() {
   const [lang, setLang] = useState("en");
   const [students, setStudentsState] = useState([]);
   const [lessons, setLessonsState] = useState([]);
+  const [classes, setClassesState] = useState([]);
   const [progress, setProgressState] = useState({});
   const [adminPass, setAdminPassState] = useState("2580");
   const [currentStudent, setCurrentStudent] = useState(null);
 
   useEffect(() => {
-    const got = { students: false, lessons: false, progress: false, settings: false };
+    const got = { students: false, lessons: false, classes: false, progress: false, settings: false };
     const checkLoaded = () => {
-      if (got.students && got.lessons && got.progress && got.settings) {
+      if (got.students && got.lessons && got.classes && got.progress && got.settings) {
         setLoaded(true);
         setConnError(false);
       }
@@ -984,6 +1127,7 @@ export default function App() {
     const unsub2 = subscribeToLessons((list) => { setLessonsState(list); got.lessons = true; checkLoaded(); });
     const unsub3 = subscribeToProgress((obj) => { setProgressState(obj); got.progress = true; checkLoaded(); });
     const unsub4 = subscribeToSettings((s) => { setAdminPassState(s.adminPass || "2580"); got.settings = true; checkLoaded(); });
+    const unsub5 = subscribeToClasses((list) => { setClassesState(list); got.classes = true; checkLoaded(); });
     const timeout = setTimeout(() => {
       if (!loaded) setConnError(true);
     }, 8000);
@@ -992,6 +1136,7 @@ export default function App() {
       unsub2();
       unsub3();
       unsub4();
+      unsub5();
       clearTimeout(timeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1041,6 +1186,19 @@ export default function App() {
     });
   }, []);
 
+  const setClasses = useCallback((next) => {
+    setClassesState((prev) => {
+      const nextIds = new Set(next.map((c) => c.id));
+      prev.forEach((c) => { if (!nextIds.has(c.id)) deleteClass(c.id); });
+      next.forEach((c) => {
+        const old = prev.find((p) => p.id === c.id);
+        if (!old) addClass(c);
+        else if (!sameData(old, c)) updateClass(c.id, c);
+      });
+      return next;
+    });
+  }, []);
+
   const setAdminPass = useCallback((v) => { setAdminPassState(v); setAdminPassword(v); }, []);
 
   if (!loaded) {
@@ -1076,6 +1234,8 @@ export default function App() {
         setStudents={setStudents}
         lessons={lessons}
         setLessons={setLessons}
+        classes={classes}
+        setClasses={setClasses}
         progress={progress}
         adminPass={adminPass}
         setAdminPass={setAdminPass}
