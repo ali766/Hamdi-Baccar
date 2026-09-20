@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2 } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock } from "lucide-react";
 import {
   subscribeToStudents,
   subscribeToLessons,
@@ -77,6 +77,13 @@ const T = {
     defaultPasswordNote: (p) => `كلمة السر الافتراضية: ${p}`,
     wrongPassword: "كلمة السر مش صح",
     teacherDashboard: "لوحة المدرّس",
+    tabDashboard: "الرئيسية",
+    dashTotalStudents: "إجمالي الطلاب",
+    dashTotalLessons: "إجمالي الدروس",
+    dashAvgProgress: "متوسط التقدم",
+    dashTopStudents: "الأكتر مذاكرة",
+    dashRecentLessons: "آخر الدروس المضافة",
+    dashNoData: "لسه مفيش بيانات كفاية.",
     tabStudents: "الطلاب",
     tabLessons: "الدروس",
     tabProgress: "متابعة المذاكرة",
@@ -142,6 +149,13 @@ const T = {
     defaultPasswordNote: (p) => `Default password: ${p}`,
     wrongPassword: "Wrong password",
     teacherDashboard: "Teacher Dashboard",
+    tabDashboard: "Dashboard",
+    dashTotalStudents: "Total Students",
+    dashTotalLessons: "Total Lessons",
+    dashAvgProgress: "Average Progress",
+    dashTopStudents: "Top Students",
+    dashRecentLessons: "Recently Added Lessons",
+    dashNoData: "Not enough data yet.",
     tabStudents: "Students",
     tabLessons: "Lessons",
     tabProgress: "Progress",
@@ -207,6 +221,13 @@ const T = {
     defaultPasswordNote: (p) => `Mot de passe par défaut : ${p}`,
     wrongPassword: "Mot de passe incorrect",
     teacherDashboard: "Tableau de bord",
+    tabDashboard: "Accueil",
+    dashTotalStudents: "Total des élèves",
+    dashTotalLessons: "Total des cours",
+    dashAvgProgress: "Progression moyenne",
+    dashTopStudents: "Meilleurs élèves",
+    dashRecentLessons: "Derniers cours ajoutés",
+    dashNoData: "Pas encore assez de données.",
     tabStudents: "Élèves",
     tabLessons: "Cours",
     tabProgress: "Suivi",
@@ -444,8 +465,9 @@ function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
 
 function AdminDashboard({ back, students, setStudents, lessons, setLessons, progress, adminPass, setAdminPass, lang, setLang }) {
   const t = T[lang];
-  const [tab, setTab] = useState("students");
+  const [tab, setTab] = useState("dashboard");
   const tabs = [
+    { id: "dashboard", label: t.tabDashboard, icon: <LayoutDashboard size={16} /> },
     { id: "students", label: t.tabStudents, icon: <Users size={16} /> },
     { id: "lessons", label: t.tabLessons, icon: <BookOpen size={16} /> },
     { id: "progress", label: t.tabProgress, icon: <ClipboardList size={16} /> },
@@ -467,11 +489,100 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, prog
         ))}
       </div>
 
+      {tab === "dashboard" && <DashboardTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} goTo={setTab} />}
       {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} />}
       {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} />}
       {tab === "progress" && <ProgressTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} />}
       {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
     </Board>
+  );
+}
+
+function StatCard({ icon, value, label, color }) {
+  return (
+    <div style={{ flex: "1 1 140px", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 12, padding: "16px 14px", background: "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, color }}>{icon}</div>
+      <div style={{ color: COLORS.chalk, fontSize: 26, fontWeight: 800 }}>{value}</div>
+      <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{label}</div>
+    </div>
+  );
+}
+
+function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
+  const overallPct = useMemo(() => {
+    if (students.length === 0 || lessons.length === 0) return 0;
+    const total = students.reduce((sum, s) => {
+      const visible = lessons.filter((l) => !l.visibleTo || l.visibleTo.length === 0 || l.visibleTo.includes(s.id));
+      return sum + studentStats(s.id, visible, progress).pct;
+    }, 0);
+    return Math.round(total / students.length);
+  }, [students, lessons, progress]);
+
+  const topStudents = useMemo(() => {
+    return students
+      .map((s) => {
+        const visible = lessons.filter((l) => !l.visibleTo || l.visibleTo.length === 0 || l.visibleTo.includes(s.id));
+        return { ...s, stats: studentStats(s.id, visible, progress) };
+      })
+      .sort((a, b) => b.stats.pct - a.stats.pct)
+      .slice(0, 3);
+  }, [students, lessons, progress]);
+
+  const recentLessons = useMemo(() => {
+    return [...lessons].sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || "")).slice(0, 3);
+  }, [lessons]);
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 26 }}>
+        <StatCard icon={<Users size={18} />} value={students.length} label={t.dashTotalStudents} color={COLORS.chalkBlue} />
+        <StatCard icon={<BookOpen size={18} />} value={lessons.length} label={t.dashTotalLessons} color={COLORS.chalkYellow} />
+        <StatCard icon={<TrendingUp size={18} />} value={`${overallPct}%`} label={t.dashAvgProgress} color={COLORS.chalkPink} />
+      </div>
+
+      <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 260px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalkBlue, fontWeight: 800, fontSize: 15, marginBottom: 10 }}>
+            <Award size={16} /> {t.dashTopStudents}
+          </div>
+          {topStudents.length === 0 ? (
+            <EmptyNote text={t.dashNoData} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {topStudents.map((s, i) => (
+                <div key={s.id} style={{ ...rowStyle, cursor: "pointer" }} onClick={() => goTo && goTo("progress")}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 15 }}>#{i + 1}</span>
+                    <span style={{ color: COLORS.chalk, fontWeight: 700 }}>{s.name}</span>
+                  </div>
+                  <span style={{ color: COLORS.chalkDim, fontSize: 14 }}>{s.stats.pct}%</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex: "1 1 260px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalkBlue, fontWeight: 800, fontSize: 15, marginBottom: 10 }}>
+            <Clock size={16} /> {t.dashRecentLessons}
+          </div>
+          {recentLessons.length === 0 ? (
+            <EmptyNote text={t.dashNoData} />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {recentLessons.map((l) => (
+                <div key={l.id} style={{ ...rowStyle, cursor: "pointer" }} onClick={() => goTo && goTo("lessons")}>
+                  <div>
+                    <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
+                    <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{l.category}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
