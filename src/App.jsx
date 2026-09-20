@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X } from "lucide-react";
 import {
   subscribeToStudents,
   subscribeToLessons,
@@ -497,6 +497,7 @@ function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
 function AdminDashboard({ back, students, setStudents, lessons, setLessons, classes, setClasses, progress, adminPass, setAdminPass, lang, setLang }) {
   const t = T[lang];
   const [tab, setTab] = useState("dashboard");
+  const [navOpen, setNavOpen] = useState(false);
   const tabs = [
     { id: "dashboard", label: t.tabDashboard, icon: <LayoutDashboard size={16} /> },
     { id: "classes", label: t.tabClasses, icon: <GraduationCap size={16} /> },
@@ -505,6 +506,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
     { id: "progress", label: t.tabProgress, icon: <ClipboardList size={16} /> },
     { id: "settings", label: t.tabSettings, icon: <Settings size={16} /> },
   ];
+  const currentTab = tabs.find((tb) => tb.id === tab);
   return (
     <Board lang={lang}>
       <TopBar back={back} label={t.logout} lang={lang} setLang={setLang} />
@@ -514,18 +516,45 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
         .admin-sidebar { display: flex; flex-direction: column; gap: 4px; flex: 0 0 190px; min-width: 190px; }
         .admin-sidebar button { justify-content: flex-start; text-align: start; }
         .admin-content { flex: 1; min-width: 0; }
+        .admin-hamburger { display: none; }
         @media (max-width: 680px) {
           .admin-layout { flex-direction: column; }
+          .admin-hamburger { display: flex; }
           .admin-sidebar { flex-direction: column; flex: 0 0 auto; min-width: 0; width: 100%; }
           .admin-sidebar button { width: 100%; }
+          .admin-sidebar.closed { display: none; }
         }
       `}</style>
+      <button
+        className="admin-hamburger"
+        onClick={() => setNavOpen(!navOpen)}
+        style={{
+          width: "100%",
+          alignItems: "center",
+          justifyContent: "space-between",
+          background: "rgba(255,255,255,0.03)",
+          border: `1px solid rgba(201,162,39,0.35)`,
+          borderRadius: 10,
+          padding: "12px 14px",
+          color: COLORS.chalkYellow,
+          fontFamily: "Cairo, sans-serif",
+          fontWeight: 700,
+          fontSize: 15,
+          cursor: "pointer",
+          marginBottom: 14,
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {currentTab?.icon} {currentTab?.label}
+        </span>
+        {navOpen ? <X size={18} /> : <Menu size={18} />}
+      </button>
       <div className="admin-layout">
-        <nav className="admin-sidebar">
+        <nav className={`admin-sidebar${navOpen ? "" : " closed"}`}>
           {tabs.map((tb) => (
             <button
               key={tb.id}
-              onClick={() => setTab(tb.id)}
+              onClick={() => { setTab(tb.id); setNavOpen(false); }}
               style={{
                 background: tab === tb.id ? "rgba(201,162,39,0.14)" : "none",
                 border: "none",
