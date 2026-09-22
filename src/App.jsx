@@ -31,6 +31,14 @@ function toEmbedUrl(url) {
   if (yt) return { type: "video", src: `https://www.youtube.com/embed/${yt[1]}` };
   const drive = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/);
   if (drive) return { type: "frame", src: `https://drive.google.com/file/d/${drive[1]}/preview` };
+  // ملف فيديو مباشر (زي اللي بيترفع على Cloudinary): يتشغل جوه الصفحة بمشغّل فيديو حقيقي
+  if (/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url) || /\/video\/upload\//.test(url)) {
+    return { type: "file-video", src: url };
+  }
+  // ملف PDF مباشر: يتعرض جوه الصفحة زي أي PDF من المتصفح
+  if (/\.pdf(\?.*)?$/i.test(url) || /\/(image|raw)\/upload\/[^]*\.pdf/i.test(url)) {
+    return { type: "frame", src: url };
+  }
   return null;
 }
 
@@ -1670,7 +1678,17 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                         </a>
                       )}
                     </div>
-                    {embed && (
+                    {embed && embed.type === "file-video" && (
+                      <video
+                        src={embed.src}
+                        controls
+                        controlsList="nodownload noremoteplayback"
+                        disablePictureInPicture
+                        onContextMenu={(e) => e.preventDefault()}
+                        style={{ width: "100%", maxWidth: 480, borderRadius: 8, marginRight: 34, background: "#000" }}
+                      />
+                    )}
+                    {embed && embed.type !== "file-video" && (
                       <iframe
                         src={embed.src}
                         title={l.title}
