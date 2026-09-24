@@ -128,6 +128,11 @@ const T = {
     backToLogin: "رجوع لتسجيل الدخول",
     pendingApprovalTitle: (n) => `طلبات تسجيل محتاجة موافقة (${n})`,
     approve: "موافقة",
+    myInfoTitle: "بياناتي",
+    myInfoSaved: "اتحفظت بياناتك",
+    changeMyPassword: "تغيير كلمة السر",
+    newPasswordLabel: "كلمة السر الجديدة",
+    newPasswordPh: "اكتب كلمة سر جديدة",
     back: "رجوع",
     logout: "خروج",
     teacherLogin: "دخول المدرّس",
@@ -295,6 +300,11 @@ const T = {
     backToLogin: "Back to login",
     pendingApprovalTitle: (n) => `Registration requests awaiting approval (${n})`,
     approve: "Approve",
+    myInfoTitle: "My info",
+    myInfoSaved: "Your info was saved",
+    changeMyPassword: "Change password",
+    newPasswordLabel: "New password",
+    newPasswordPh: "Type a new password",
     login: "Log in",
     back: "Back",
     logout: "Log out",
@@ -463,6 +473,11 @@ const T = {
     backToLogin: "Retour à la connexion",
     pendingApprovalTitle: (n) => `Demandes d'inscription en attente (${n})`,
     approve: "Approuver",
+    myInfoTitle: "Mes informations",
+    myInfoSaved: "Vos informations ont été enregistrées",
+    changeMyPassword: "Changer le mot de passe",
+    newPasswordLabel: "Nouveau mot de passe",
+    newPasswordPh: "Saisissez un nouveau mot de passe",
     login: "Connexion",
     back: "Retour",
     logout: "Déconnexion",
@@ -1144,6 +1159,8 @@ function StudentsTab({ t, students, setStudents, classes }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [classId, setClassId] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [copiedId, setCopiedId] = useState(null);
 
   const pending = students.filter((s) => s.status === "pending");
@@ -1152,11 +1169,13 @@ function StudentsTab({ t, students, setStudents, classes }) {
   const add = (e) => {
     e.preventDefault();
     if (!name.trim() || !username.trim() || !password.trim()) return;
-    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), classId: classId || null, status: "approved", createdAt: new Date().toISOString() }]);
+    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), phone: phone.trim(), email: email.trim(), classId: classId || null, status: "approved", createdAt: new Date().toISOString() }]);
     setName("");
     setUsername("");
     setPassword("");
     setClassId("");
+    setPhone("");
+    setEmail("");
   };
   const remove = (id) => setStudents(students.filter((s) => s.id !== id));
   const approvePending = (id, uname, pass) =>
@@ -1195,6 +1214,12 @@ function StudentsTab({ t, students, setStudents, classes }) {
           <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
+          <ChalkInput label={t.phone} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+        </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <ChalkInput label={t.emailOptional} value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
+        </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
             <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{t.assignClass}</span>
             <select
@@ -1228,6 +1253,11 @@ function StudentsTab({ t, students, setStudents, classes }) {
                 <div style={{ color: COLORS.chalkDim, fontSize: 15, direction: "ltr", textAlign: "right" }}>
                   {s.username} · {s.password}
                 </div>
+                {(s.phone || s.email) && (
+                  <div style={{ color: COLORS.chalkDim, fontSize: 13.5, marginTop: 2, direction: "ltr", textAlign: "right" }}>
+                    {s.phone} {s.phone && s.email && "·"} {s.email}
+                  </div>
+                )}
                 {classNameFor(s.classId) && (
                   <div style={{ color: COLORS.chalkBlue, fontSize: 13.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
                     <GraduationCap size={12} /> {classNameFor(s.classId)}
@@ -2413,18 +2443,70 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit, preview }) {
   );
 }
 
-function StudentDashboard({ back, student, lessons, progress, setProgress, lang, setLang }) {
+function StudentSettingsTab({ t, student, students, setStudents }) {
+  const [email, setEmail] = useState(student.email || "");
+  const [phone, setPhone] = useState(student.phone || "");
+  const [savedInfo, setSavedInfo] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [savedPass, setSavedPass] = useState(false);
+
+  const saveInfo = (e) => {
+    e.preventDefault();
+    setStudents(students.map((s) => (s.id === student.id ? { ...s, email: email.trim(), phone: phone.trim() } : s)));
+    setSavedInfo(true);
+    setTimeout(() => setSavedInfo(false), 2000);
+  };
+
+  const savePassword = (e) => {
+    e.preventDefault();
+    if (!newPassword.trim()) return;
+    setStudents(students.map((s) => (s.id === student.id ? { ...s, password: newPassword.trim() } : s)));
+    setNewPassword("");
+    setSavedPass(true);
+    setTimeout(() => setSavedPass(false), 2000);
+  };
+
+  return (
+    <div style={{ maxWidth: 420, margin: "0 auto", display: "flex", flexDirection: "column", gap: 24 }}>
+      <form onSubmit={saveInfo} style={{ display: "flex", flexDirection: "column", gap: 12, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
+        <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16 }}>{t.myInfoTitle}</div>
+        <ChalkInput label={t.phone} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+        <ChalkInput label={t.emailOptional} value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <ChalkButton type="submit" color={COLORS.chalkYellow}>{t.save}</ChalkButton>
+          {savedInfo && <span style={{ color: COLORS.chalkBlue, fontSize: 13.5 }}>{t.myInfoSaved}</span>}
+        </div>
+      </form>
+
+      <form onSubmit={savePassword} style={{ display: "flex", flexDirection: "column", gap: 12, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
+        <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16 }}>{t.changeMyPassword}</div>
+        <ChalkInput label={t.newPasswordLabel} icon={<Lock size={16} color={COLORS.chalkDim} />} type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t.newPasswordPh} dir="ltr" />
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <ChalkButton type="submit" color={COLORS.chalkYellow}>{t.save}</ChalkButton>
+          {savedPass && <span style={{ color: COLORS.chalkBlue, fontSize: 13.5 }}>{t.myInfoSaved}</span>}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function StudentDashboard({ back, student, students, setStudents, lessons, progress, setProgress, lang, setLang }) {
   const t = T[lang];
+  const [tab, setTab] = useState("lessons");
   const visibleLessons = useMemo(
     () => lessons.filter((l) => lessonVisibleToStudent(l, student)),
     [lessons, student.id]
   );
   const stats = studentStats(student.id, visibleLessons, progress);
-  const grouped = useMemo(() => {
+  const lessonItems = useMemo(() => visibleLessons.filter((l) => l.type !== "exam"), [visibleLessons]);
+  const examItems = useMemo(() => visibleLessons.filter((l) => l.type === "exam"), [visibleLessons]);
+  const groupByCategory = (items) => {
     const g = {};
-    visibleLessons.forEach((l) => { g[l.category] = g[l.category] || []; g[l.category].push(l); });
+    items.forEach((l) => { g[l.category] = g[l.category] || []; g[l.category].push(l); });
     return g;
-  }, [visibleLessons]);
+  };
+  const groupedLessons = useMemo(() => groupByCategory(lessonItems), [lessonItems]);
+  const groupedExams = useMemo(() => groupByCategory(examItems), [examItems]);
 
   const toggleWatched = (lessonId) => {
     const mine = { ...(progress[student.id] || {}) };
@@ -2445,12 +2527,107 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
     setProgress({ ...progress, [student.id]: mine });
   };
 
+  const renderItem = (l) => {
+    const type = l.type || "video";
+    const entry = (progress[student.id] && progress[student.id][l.id]) || null;
+    const watched = entry && entry.watched;
+
+    if (type === "exam" && (!l.examFormat || l.examFormat === "builder")) {
+      return (
+        <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {lessonTypeIcon("exam", 16)}
+            <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
+          </div>
+          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
+          <ExamTaker t={t} lesson={l} entry={entry} onStart={(startedAt) => startExam(l.id, startedAt)} onSubmit={(answers, score) => submitExam(l.id, answers, score)} />
+        </div>
+      );
+    }
+    // exam as a PDF/Word file (type === "exam" && examFormat is "pdf"/"word") falls through
+    // to the generic downloadable-file rendering below, same as a video/PDF/Word lesson.
+
+    if (type === "text") {
+      return (
+        <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <button onClick={() => toggleWatched(l.id)} style={iconBtnStyle}>
+              {watched ? <CheckCircle2 size={20} color={COLORS.chalkBlue} /> : <Circle size={20} color={COLORS.chalkDim} />}
+            </button>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
+                {lessonTypeIcon("text", 14)} {l.title}
+              </div>
+              {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
+              {watched && entry.watchedAt && (
+                <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
+              )}
+              <div style={{ color: COLORS.chalk, fontSize: 15, marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // video / pdf
+    const embed = toEmbedUrl(l.url);
+    return (
+      <div key={l.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10, flexDirection: "column", alignItems: "stretch" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 200 }}>
+            <button onClick={() => toggleWatched(l.id)} style={iconBtnStyle}>
+              {watched ? <CheckCircle2 size={20} color={COLORS.chalkBlue} /> : <Circle size={20} color={COLORS.chalkDim} />}
+            </button>
+            <div>
+              <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
+                {lessonTypeIcon(type, 14)} {l.title}
+              </div>
+              {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
+              {watched && entry.watchedAt && (
+                <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
+              )}
+            </div>
+          </div>
+          {l.url && !embed && (
+            <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
+              {type === "pdf" ? t.openPdf : t.openLesson} <ExternalLink size={14} />
+            </a>
+          )}
+          {l.url && embed && l.allowDownload && (
+            <a href={l.url} download target="_blank" rel="noreferrer" style={{ color: COLORS.chalkBlue, display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+              {t.downloadFile} <Upload size={13} style={{ transform: "rotate(180deg)" }} />
+            </a>
+          )}
+        </div>
+        <div style={{ marginRight: 34 }}>
+          <LessonEmbed lesson={l} />
+        </div>
+      </div>
+    );
+  };
+
+  const renderGrouped = (grouped, emptyText) => {
+    if (Object.keys(grouped).length === 0) return <EmptyNote text={emptyText} />;
+    return Object.entries(grouped).map(([cat, items]) => (
+      <div key={cat} style={{ marginBottom: 22 }}>
+        <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 17, marginBottom: 8 }}>{cat}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((l) => renderItem(l))}</div>
+      </div>
+    ));
+  };
+
+  const studentTabs = [
+    { id: "lessons", label: t.tabLessons, icon: <BookOpen size={15} /> },
+    { id: "exams", label: t.tabExams, icon: <ListChecks size={15} /> },
+    { id: "settings", label: t.tabSettings, icon: <Settings size={15} /> },
+  ];
+
   return (
     <Board lang={lang}>
       <TopBar back={back} label={t.logout} lang={lang} setLang={setLang} />
       <Title lang={lang} sub={t.welcome(student.name)}>{t.brand}</Title>
 
-      <div style={{ maxWidth: 500, margin: "0 auto 26px" }}>
+      <div style={{ maxWidth: 500, margin: "0 auto 20px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, color: COLORS.chalkDim, marginBottom: 6 }}>
           <span>{t.completed(stats.done, stats.total)}</span>
           <span>{stats.pct}%</span>
@@ -2460,95 +2637,35 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
         </div>
       </div>
 
-      {visibleLessons.length === 0 ? (
-        <EmptyNote text={t.noLessonsYet} />
-      ) : (
-        Object.entries(grouped).map(([cat, items]) => (
-          <div key={cat} style={{ marginBottom: 22 }}>
-            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 17, marginBottom: 8 }}>{cat}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {items.map((l) => {
-                const type = l.type || "video";
-                const entry = (progress[student.id] && progress[student.id][l.id]) || null;
-                const watched = entry && entry.watched;
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", marginBottom: 22 }}>
+        {studentTabs.map((tb) => (
+          <button
+            key={tb.id}
+            type="button"
+            onClick={() => setTab(tb.id)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 16px",
+              borderRadius: 20,
+              border: `1.5px solid ${tab === tb.id ? COLORS.chalkYellow : "rgba(201,162,39,0.3)"}`,
+              background: tab === tb.id ? "rgba(201,162,39,0.14)" : "transparent",
+              color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim,
+              cursor: "pointer",
+              fontFamily: "Cairo, sans-serif",
+              fontWeight: 700,
+              fontSize: 14.5,
+            }}
+          >
+            {tb.icon} {tb.label}
+          </button>
+        ))}
+      </div>
 
-                if (type === "exam" && (!l.examFormat || l.examFormat === "builder")) {
-                  return (
-                    <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        {lessonTypeIcon("exam", 16)}
-                        <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
-                      </div>
-                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
-                      <ExamTaker t={t} lesson={l} entry={entry} onStart={(startedAt) => startExam(l.id, startedAt)} onSubmit={(answers, score) => submitExam(l.id, answers, score)} />
-                    </div>
-                  );
-                }
-                // exam as a PDF/Word file (type === "exam" && examFormat is "pdf"/"word") falls through
-                // to the generic downloadable-file rendering below, same as a video/PDF/Word lesson.
-
-                if (type === "text") {
-                  return (
-                    <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                        <button onClick={() => toggleWatched(l.id)} style={iconBtnStyle}>
-                          {watched ? <CheckCircle2 size={20} color={COLORS.chalkBlue} /> : <Circle size={20} color={COLORS.chalkDim} />}
-                        </button>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
-                            {lessonTypeIcon("text", 14)} {l.title}
-                          </div>
-                          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
-                          {watched && entry.watchedAt && (
-                            <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
-                          )}
-                          <div style={{ color: COLORS.chalk, fontSize: 15, marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // video / pdf
-                const embed = toEmbedUrl(l.url);
-                return (
-                  <div key={l.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10, flexDirection: "column", alignItems: "stretch" }}>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flex: 1, minWidth: 200 }}>
-                        <button onClick={() => toggleWatched(l.id)} style={iconBtnStyle}>
-                          {watched ? <CheckCircle2 size={20} color={COLORS.chalkBlue} /> : <Circle size={20} color={COLORS.chalkDim} />}
-                        </button>
-                        <div>
-                          <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
-                            {lessonTypeIcon(type, 14)} {l.title}
-                          </div>
-                          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
-                          {watched && entry.watchedAt && (
-                            <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
-                          )}
-                        </div>
-                      </div>
-                      {l.url && !embed && (
-                        <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
-                          {type === "pdf" ? t.openPdf : t.openLesson} <ExternalLink size={14} />
-                        </a>
-                      )}
-                      {l.url && embed && l.allowDownload && (
-                        <a href={l.url} download target="_blank" rel="noreferrer" style={{ color: COLORS.chalkBlue, display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
-                          {t.downloadFile} <Upload size={13} style={{ transform: "rotate(180deg)" }} />
-                        </a>
-                      )}
-                    </div>
-                    <div style={{ marginRight: 34 }}>
-                      <LessonEmbed lesson={l} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))
-      )}
+      {tab === "lessons" && renderGrouped(groupedLessons, t.noLessonsYet)}
+      {tab === "exams" && renderGrouped(groupedExams, t.noExams)}
+      {tab === "settings" && <StudentSettingsTab t={t} student={student} students={students} setStudents={setStudents} />}
     </Board>
   );
 }
@@ -2709,11 +2826,14 @@ export default function App() {
       />
     );
 
-  if (screen === "studentDashboard")
+  if (screen === "studentDashboard") {
+    const liveStudent = students.find((s) => s.id === currentStudent.id) || currentStudent;
     return (
       <StudentDashboard
         back={() => { setCurrentStudent(null); setScreen("studentLogin"); }}
-        student={currentStudent}
+        student={liveStudent}
+        students={students}
+        setStudents={setStudents}
         lessons={lessons}
         progress={progress}
         setProgress={setProgress}
@@ -2721,6 +2841,7 @@ export default function App() {
         setLang={setLang}
       />
     );
+  }
 
   return null;
 }
