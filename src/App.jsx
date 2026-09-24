@@ -152,6 +152,7 @@ const T = {
     deleteClassConfirm: "هتمسح الفصل ده؟ الطلاب فيه هيبقوا بدون فصل.",
     tabStudents: "الطلاب",
     tabLessons: "الدروس",
+    tabExams: "الامتحانات",
     tabProgress: "متابعة المذاكرة",
     tabSettings: "الإعدادات",
     changePassword: "غيّر كلمة سر المدرّس",
@@ -183,6 +184,17 @@ const T = {
     typeWord: "Word",
     typeText: "درس مكتوب",
     typeExam: "امتحان",
+    addExam: "إضافة امتحان",
+    noExams: "لسه مفيش امتحانات مضافة.",
+    examFormatLabel: "شكل الامتحان",
+    examFormatBuilder: "أسئلة تفاعلية",
+    examFormatPdf: "ملف PDF",
+    examFormatWord: "ملف Word",
+    examTitle: "عنوان الامتحان",
+    examTitlePh: "مثال: امتحان الوحدة الأولى",
+    examFileUrl: "ملف الامتحان",
+    examFileUrlPh: "https://...",
+    examFileNote: "الطالب هيفتح الملف ده ويقدر يحمّله ويكتب إجابته فيه ويسلّمه للمدرس بره النظام.",
     lessonPdfUrl: "رابط الـ PDF (Google Drive)",
     lessonPdfUrlPh: "https://drive.google.com/...",
     lessonPptUrl: "ملف البوربوينت",
@@ -308,6 +320,7 @@ const T = {
     deleteClassConfirm: "Delete this class? Its students will become unassigned.",
     tabStudents: "Students",
     tabLessons: "Lessons",
+    tabExams: "Exams",
     tabProgress: "Progress",
     tabSettings: "Settings",
     changePassword: "Change teacher password",
@@ -339,6 +352,17 @@ const T = {
     typeWord: "Word",
     typeText: "Written lesson",
     typeExam: "Exam",
+    addExam: "Add exam",
+    noExams: "No exams added yet.",
+    examFormatLabel: "Exam format",
+    examFormatBuilder: "Interactive questions",
+    examFormatPdf: "PDF file",
+    examFormatWord: "Word file",
+    examTitle: "Exam title",
+    examTitlePh: "e.g. Unit 1 exam",
+    examFileUrl: "Exam file",
+    examFileUrlPh: "https://...",
+    examFileNote: "The student will open this file, can download it, write their answers, and hand it back to you outside the system.",
     lessonPdfUrl: "PDF link (Google Drive)",
     lessonPdfUrlPh: "https://drive.google.com/...",
     lessonPptUrl: "PowerPoint file",
@@ -464,6 +488,7 @@ const T = {
     deleteClassConfirm: "Supprimer cette classe ? Ses élèves n'auront plus de classe.",
     tabStudents: "Élèves",
     tabLessons: "Cours",
+    tabExams: "Examens",
     tabProgress: "Suivi",
     tabSettings: "Paramètres",
     changePassword: "Changer le mot de passe",
@@ -495,6 +520,17 @@ const T = {
     typeWord: "Word",
     typeText: "Cours écrit",
     typeExam: "Examen",
+    addExam: "Ajouter un examen",
+    noExams: "Aucun examen ajouté pour l'instant.",
+    examFormatLabel: "Format de l'examen",
+    examFormatBuilder: "Questions interactives",
+    examFormatPdf: "Fichier PDF",
+    examFormatWord: "Fichier Word",
+    examTitle: "Titre de l'examen",
+    examTitlePh: "ex : Examen de l'unité 1",
+    examFileUrl: "Fichier de l'examen",
+    examFileUrlPh: "https://...",
+    examFileNote: "L'élève ouvrira ce fichier, pourra le télécharger, y écrire ses réponses et le remettre à l'enseignant en dehors du système.",
     lessonPdfUrl: "Lien du PDF (Google Drive)",
     lessonPdfUrlPh: "https://drive.google.com/...",
     lessonPptUrl: "Fichier PowerPoint",
@@ -586,7 +622,7 @@ function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chal
   const base = {
     fontFamily: "Cairo, sans-serif",
     fontWeight: 700,
-    fontSize: 16,
+    fontSize: 17,
     padding: "12px 22px",
     borderRadius: 10,
     cursor: disabled ? "not-allowed" : "pointer",
@@ -612,10 +648,10 @@ function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chal
 function ChalkInput({ label, icon, dir, ...props }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
-      {label && <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{label}</span>}
+      {label && <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{label}</span>}
       <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", background: "rgba(255,255,255,0.03)" }}>
         {icon}
-        <input {...props} dir={dir} style={{ background: "transparent", border: "none", outline: "none", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16, width: "100%" }} />
+        <input {...props} dir={dir} style={{ background: "transparent", border: "none", outline: "none", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 17, width: "100%" }} />
       </div>
     </label>
   );
@@ -679,7 +715,7 @@ function LangToggle({ lang, setLang }) {
             border: "none",
             padding: "5px 10px",
             fontFamily: "Cairo, sans-serif",
-            fontSize: 11.5,
+            fontSize: 12.5,
             fontWeight: 800,
             cursor: "pointer",
             letterSpacing: 0.5,
@@ -708,7 +744,7 @@ function Title({ lang, children, sub }) {
       >
         {children}
       </h1>
-      {sub && <p style={{ color: COLORS.chalkDim, marginTop: 10, fontSize: 15 }}>{sub}</p>}
+      {sub && <p style={{ color: COLORS.chalkDim, marginTop: 10, fontSize: 16 }}>{sub}</p>}
     </div>
   );
 }
@@ -717,7 +753,7 @@ function TopBar({ back, label, lang, setLang }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
       {back ? (
-        <button onClick={back} style={{ background: "none", border: "none", color: COLORS.chalkDim, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 14 }}>
+        <button onClick={back} style={{ background: "none", border: "none", color: COLORS.chalkDim, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 15 }}>
           <ArrowRight size={16} style={{ transform: lang === "en" || lang === "fr" ? "scaleX(-1)" : "none" }} /> {label}
         </button>
       ) : (
@@ -732,7 +768,7 @@ const rowStyle = { display: "flex", justifyContent: "space-between", alignItems:
 const iconBtnStyle = { background: "none", border: "none", cursor: "pointer", padding: 6 };
 
 function EmptyNote({ text }) {
-  return <div style={{ textAlign: "center", color: COLORS.chalkDim, padding: "30px 10px", border: `1px dashed rgba(201,162,39,0.3)`, borderRadius: 10, fontSize: 14 }}>{text}</div>;
+  return <div style={{ textAlign: "center", color: COLORS.chalkDim, padding: "30px 10px", border: `1px dashed rgba(201,162,39,0.3)`, borderRadius: 10, fontSize: 15 }}>{text}</div>;
 }
 
 /* ---------- admin ---------- */
@@ -754,7 +790,7 @@ function AdminLogin({ back, onSuccess, adminPass, lang, setLang }) {
       </Title>
       <form onSubmit={submit} style={{ maxWidth: 320, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
         <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoFocus />
-        {err && <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>{err}</div>}
+        {err && <div style={{ color: COLORS.chalkPink, fontSize: 14 }}>{err}</div>}
         <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }}>
           {t.login}
         </ChalkButton>
@@ -811,6 +847,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
     { id: "classes", label: t.tabClasses, icon: <GraduationCap size={16} /> },
     { id: "students", label: t.tabStudents, icon: <Users size={16} /> },
     { id: "lessons", label: t.tabLessons, icon: <BookOpen size={16} /> },
+    { id: "exams", label: t.tabExams, icon: <ListChecks size={16} /> },
     { id: "progress", label: t.tabProgress, icon: <ClipboardList size={16} /> },
     { id: "settings", label: t.tabSettings, icon: <Settings size={16} /> },
   ];
@@ -824,7 +861,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
     color: tab === id ? COLORS.chalkYellow : COLORS.chalkDim,
     fontFamily: "Cairo, sans-serif",
     fontWeight: 700,
-    fontSize: 15,
+    fontSize: 16,
     padding: "10px 14px",
     borderRadius: 8,
     display: "flex",
@@ -870,7 +907,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
           color: COLORS.chalkYellow,
           fontFamily: "Cairo, sans-serif",
           fontWeight: 700,
-          fontSize: 15,
+          fontSize: 16,
           cursor: "pointer",
           marginBottom: 14,
         }}
@@ -887,6 +924,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
           {tab === "classes" && <ClassesTab t={t} classes={classes} setClasses={setClasses} students={students} />}
           {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} classes={classes} />}
           {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} />}
+          {tab === "exams" && <ExamsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} />}
           {tab === "progress" && <ProgressTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} />}
           {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
         </div>
@@ -894,7 +932,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
 
       <MobileDrawer open={navOpen} onClose={() => setNavOpen(false)} lang={lang}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <span style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 17, fontFamily: "'Playfair Display', serif" }}>{t.brand}</span>
+          <span style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 18, fontFamily: "'Playfair Display', serif" }}>{t.brand}</span>
           <button onClick={() => setNavOpen(false)} style={iconBtnStyle}>
             <X size={20} color={COLORS.chalkDim} />
           </button>
@@ -909,8 +947,8 @@ function StatCard({ icon, value, label, color }) {
   return (
     <div style={{ flex: "1 1 140px", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 12, padding: "16px 14px", background: "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, color }}>{icon}</div>
-      <div style={{ color: COLORS.chalk, fontSize: 26, fontWeight: 800 }}>{value}</div>
-      <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{label}</div>
+      <div style={{ color: COLORS.chalk, fontSize: 27, fontWeight: 800 }}>{value}</div>
+      <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{label}</div>
     </div>
   );
 }
@@ -949,7 +987,7 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
 
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
         <div style={{ flex: "1 1 260px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalkBlue, fontWeight: 800, fontSize: 15, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalkBlue, fontWeight: 800, fontSize: 16, marginBottom: 10 }}>
             <Award size={16} /> {t.dashTopStudents}
           </div>
           {topStudents.length === 0 ? (
@@ -959,10 +997,10 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
               {topStudents.map((s, i) => (
                 <div key={s.id} style={{ ...rowStyle, cursor: "pointer" }} onClick={() => goTo && goTo("progress")}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 15 }}>#{i + 1}</span>
+                    <span style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16 }}>#{i + 1}</span>
                     <span style={{ color: COLORS.chalk, fontWeight: 700 }}>{s.name}</span>
                   </div>
-                  <span style={{ color: COLORS.chalkDim, fontSize: 14 }}>{s.stats.pct}%</span>
+                  <span style={{ color: COLORS.chalkDim, fontSize: 15 }}>{s.stats.pct}%</span>
                 </div>
               ))}
             </div>
@@ -970,7 +1008,7 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
         </div>
 
         <div style={{ flex: "1 1 260px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalkBlue, fontWeight: 800, fontSize: 15, marginBottom: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalkBlue, fontWeight: 800, fontSize: 16, marginBottom: 10 }}>
             <Clock size={16} /> {t.dashRecentLessons}
           </div>
           {recentLessons.length === 0 ? (
@@ -981,7 +1019,7 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
                 <div key={l.id} style={{ ...rowStyle, cursor: "pointer" }} onClick={() => goTo && goTo("lessons")}>
                   <div>
                     <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
-                    <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{l.category}</div>
+                    <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{l.category}</div>
                   </div>
                 </div>
               ))}
@@ -1003,7 +1041,7 @@ function SettingsTab({ t, adminPass, setAdminPass }) {
         <ChalkButton color={COLORS.chalkYellow} onClick={() => { if (val.trim()) { setAdminPass(val.trim()); setSaved(true); } }}>
           {t.save}
         </ChalkButton>
-        {saved && <span style={{ color: COLORS.chalkBlue, marginRight: 12, marginLeft: 12, fontSize: 13 }}>{t.saved}</span>}
+        {saved && <span style={{ color: COLORS.chalkBlue, marginRight: 12, marginLeft: 12, fontSize: 14 }}>{t.saved}</span>}
       </div>
     </div>
   );
@@ -1042,8 +1080,8 @@ function ClassesTab({ t, classes, setClasses, students }) {
           {classes.map((c) => (
             <div key={c.id} style={rowStyle}>
               <div>
-                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{c.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{t.studentsInClass(countFor(c.id))}</div>
+                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{c.name}</div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.studentsInClass(countFor(c.id))}</div>
               </div>
               <button onClick={() => remove(c.id)} style={iconBtnStyle}>
                 <Trash2 size={16} color={COLORS.chalkPink} />
@@ -1064,10 +1102,10 @@ function PendingStudentRow({ t, s, classNameFor, onApprove, onReject }) {
     <div style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{s.name}</div>
-          <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{s.phone} {s.email && `· ${s.email}`}</div>
+          <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{s.name}</div>
+          <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{s.phone} {s.email && `· ${s.email}`}</div>
           {classNameFor(s.classId) && (
-            <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+            <div style={{ color: COLORS.chalkBlue, fontSize: 13.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
               <GraduationCap size={12} /> {classNameFor(s.classId)}
             </div>
           )}
@@ -1138,7 +1176,7 @@ function StudentsTab({ t, students, setStudents, classes }) {
     <div>
       {pending.length > 0 && (
         <div style={{ marginBottom: 24 }}>
-          <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 15, marginBottom: 8 }}>{t.pendingApprovalTitle(pending.length)}</div>
+          <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{t.pendingApprovalTitle(pending.length)}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {pending.map((s) => (
               <PendingStudentRow key={s.id} t={t} s={s} classNameFor={classNameFor} onApprove={approvePending} onReject={remove} />
@@ -1158,11 +1196,11 @@ function StudentsTab({ t, students, setStudents, classes }) {
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
-            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.assignClass}</span>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{t.assignClass}</span>
             <select
               value={classId}
               onChange={(e) => setClassId(e.target.value)}
-              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
+              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16 }}
             >
               <option value="" style={{ color: "#000" }}>{t.noClassOpt}</option>
               {(classes || []).map((c) => (
@@ -1186,12 +1224,12 @@ function StudentsTab({ t, students, setStudents, classes }) {
           {approved.map((s) => (
             <div key={s.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10 }}>
               <div>
-                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{s.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 14, direction: "ltr", textAlign: "right" }}>
+                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{s.name}</div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 15, direction: "ltr", textAlign: "right" }}>
                   {s.username} · {s.password}
                 </div>
                 {classNameFor(s.classId) && (
-                  <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{ color: COLORS.chalkBlue, fontSize: 13.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
                     <GraduationCap size={12} /> {classNameFor(s.classId)}
                   </div>
                 )}
@@ -1200,7 +1238,7 @@ function StudentsTab({ t, students, setStudents, classes }) {
                 <select
                   value={s.classId || ""}
                   onChange={(e) => setStudentClass(s.id, e.target.value)}
-                  style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 8, padding: "6px 8px", color: COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontSize: 12.5 }}
+                  style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 8, padding: "6px 8px", color: COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontSize: 13.5 }}
                 >
                   <option value="" style={{ color: "#000" }}>{t.noClassOpt}</option>
                   {(classes || []).map((c) => (
@@ -1250,27 +1288,27 @@ function LessonVisibilityPicker({ t, students, classes, value, onChange }) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        style={{ background: "none", border: "none", cursor: "pointer", color: isAll ? COLORS.chalkBlue : COLORS.chalkYellow, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, width: "100%", justifyContent: "space-between" }}
+        style={{ background: "none", border: "none", cursor: "pointer", color: isAll ? COLORS.chalkBlue : COLORS.chalkYellow, fontFamily: "Cairo, sans-serif", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6, width: "100%", justifyContent: "space-between" }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Users size={14} /> {summary}
         </span>
-        <span style={{ fontSize: 11, color: COLORS.chalkDim }}>{t.whoCanSee}</span>
+        <span style={{ fontSize: 12, color: COLORS.chalkDim }}>{t.whoCanSee}</span>
       </button>
       {open && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: COLORS.chalk, cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: COLORS.chalk, cursor: "pointer" }}>
             <input type="checkbox" checked={isAll} onChange={() => emit([], [])} />
             {t.allStudentsOpt}
           </label>
 
           <div>
-            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>{t.specificClasses}</div>
+            <div style={{ color: COLORS.chalkDim, fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>{t.specificClasses}</div>
             {(classes || []).length === 0 ? (
-              <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.noClassesYet}</div>
+              <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noClassesYet}</div>
             ) : (
               (classes || []).map((c) => (
-                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: COLORS.chalk, cursor: "pointer" }}>
+                <label key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: COLORS.chalk, cursor: "pointer" }}>
                   <input type="checkbox" checked={classIds.includes(c.id)} onChange={() => toggleClass(c.id)} />
                   {c.name}
                 </label>
@@ -1279,12 +1317,12 @@ function LessonVisibilityPicker({ t, students, classes, value, onChange }) {
           </div>
 
           <div>
-            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, fontWeight: 700, marginBottom: 4 }}>{t.specificStudents}</div>
+            <div style={{ color: COLORS.chalkDim, fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>{t.specificStudents}</div>
             {students.length === 0 ? (
-              <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.noStudentsToPick}</div>
+              <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noStudentsToPick}</div>
             ) : (
               students.map((s) => (
-                <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: COLORS.chalk, cursor: "pointer" }}>
+                <label key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: COLORS.chalk, cursor: "pointer" }}>
                   <input type="checkbox" checked={studentIds.includes(s.id)} onChange={() => toggleStudent(s.id)} />
                   {s.name}
                 </label>
@@ -1303,8 +1341,15 @@ const LESSON_TYPES = [
   { id: "ppt", icon: <FileText size={15} /> },
   { id: "word", icon: <FileText size={15} /> },
   { id: "text", icon: <PenLine size={15} /> },
-  { id: "exam", icon: <ListChecks size={15} /> },
 ];
+const EXAM_FORMATS = [
+  { id: "builder", icon: <ListChecks size={15} /> },
+  { id: "pdf", icon: <FileText size={15} /> },
+  { id: "word", icon: <FileText size={15} /> },
+];
+function examFormatLabel(t, format) {
+  return { builder: t.examFormatBuilder, pdf: t.examFormatPdf, word: t.examFormatWord }[format || "builder"];
+}
 const DOWNLOADABLE_TYPES = ["video", "pdf", "ppt", "word"];
 function lessonTypeLabel(t, type) {
   return { video: t.typeVideo, pdf: t.typePdf, ppt: t.typePpt, word: t.typeWord, text: t.typeText, exam: t.typeExam }[type || "video"];
@@ -1377,13 +1422,13 @@ function ExamBuilder({ t, questions, setQuestions }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <div style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.examQuestions}</div>
+      <div style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{t.examQuestions}</div>
       {questions.map((q, qi) => {
         const kind = q.kind || "mcq";
         return (
           <div key={q.id} style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ color: COLORS.chalkBlue, fontSize: 12, fontWeight: 700 }}>#{qi + 1} · {questionKindLabel(t, kind)}</span>
+              <span style={{ color: COLORS.chalkBlue, fontSize: 13, fontWeight: 700 }}>#{qi + 1} · {questionKindLabel(t, kind)}</span>
               <button type="button" onClick={() => removeQuestion(q.id)} style={iconBtnStyle} title={t.removeQuestion}>
                 <Trash2 size={16} color={COLORS.chalkPink} />
               </button>
@@ -1391,13 +1436,13 @@ function ExamBuilder({ t, questions, setQuestions }) {
 
             {kind === "fillblank" ? (
               <div>
-                <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>{t.fillBlankTextHint}</span>
+                <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 4 }}>{t.fillBlankTextHint}</span>
                 <textarea
                   value={q.text}
                   onChange={(e) => updateQuestion(q.id, { text: e.target.value })}
                   placeholder={t.fillBlankTextPh}
                   rows={3}
-                  style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14, resize: "vertical" }}
+                  style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15, resize: "vertical" }}
                 />
               </div>
             ) : (
@@ -1413,7 +1458,7 @@ function ExamBuilder({ t, questions, setQuestions }) {
                       value={o.text}
                       onChange={(e) => updateOption(q.id, o.id, e.target.value)}
                       placeholder={t.optionText(oi + 1)}
-                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
                     />
                     {q.options.length > 2 && (
                       <button type="button" onClick={() => removeOption(q.id, o.id)} style={iconBtnStyle}>
@@ -1422,7 +1467,7 @@ function ExamBuilder({ t, questions, setQuestions }) {
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={() => addOption(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
+                <button type="button" onClick={() => addOption(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 13.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
                   + {t.addOption}
                 </button>
               </div>
@@ -1430,28 +1475,28 @@ function ExamBuilder({ t, questions, setQuestions }) {
 
             {kind === "truefalse" && (
               <div style={{ display: "flex", gap: 16 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalk, fontSize: 14, cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalk, fontSize: 15, cursor: "pointer" }}>
                   <input type="radio" name={`tf-${q.id}`} checked={q.correctAnswer === true} onChange={() => updateQuestion(q.id, { correctAnswer: true })} /> {t.trueLabel}
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalk, fontSize: 14, cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalk, fontSize: 15, cursor: "pointer" }}>
                   <input type="radio" name={`tf-${q.id}`} checked={q.correctAnswer === false} onChange={() => updateQuestion(q.id, { correctAnswer: false })} /> {t.falseLabel}
                 </label>
               </div>
             )}
 
-            {kind === "essay" && <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.essayHint}</div>}
+            {kind === "essay" && <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.essayHint}</div>}
 
             {kind === "fillblank" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600 }}>{t.blanksAnswersLabel}</span>
+                <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.blanksAnswersLabel}</span>
                 {q.blanks.map((b, bi) => (
                   <div key={bi} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: COLORS.chalkBlue, fontSize: 12.5, minWidth: 20 }}>{bi + 1}.</span>
+                    <span style={{ color: COLORS.chalkBlue, fontSize: 13.5, minWidth: 20 }}>{bi + 1}.</span>
                     <input
                       value={b}
                       onChange={(e) => updateBlank(q.id, bi, e.target.value)}
                       placeholder={t.blankWordPh}
-                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
                     />
                     {q.blanks.length > 1 && (
                       <button type="button" onClick={() => removeBlank(q.id, bi)} style={iconBtnStyle}>
@@ -1460,7 +1505,7 @@ function ExamBuilder({ t, questions, setQuestions }) {
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={() => addBlank(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
+                <button type="button" onClick={() => addBlank(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 13.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
                   + {t.addBlank}
                 </button>
               </div>
@@ -1474,14 +1519,14 @@ function ExamBuilder({ t, questions, setQuestions }) {
                       value={p.left}
                       onChange={(e) => updatePair(q.id, p.id, { left: e.target.value })}
                       placeholder={t.matchLeftPh}
-                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
                     />
                     <ArrowRight size={14} color={COLORS.chalkDim} />
                     <input
                       value={p.right}
                       onChange={(e) => updatePair(q.id, p.id, { right: e.target.value })}
                       placeholder={t.matchRightPh}
-                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
                     />
                     {q.pairs.length > 2 && (
                       <button type="button" onClick={() => removePair(q.id, p.id)} style={iconBtnStyle}>
@@ -1490,7 +1535,7 @@ function ExamBuilder({ t, questions, setQuestions }) {
                     )}
                   </div>
                 ))}
-                <button type="button" onClick={() => addPair(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
+                <button type="button" onClick={() => addPair(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 13.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
                   + {t.addPair}
                 </button>
               </div>
@@ -1540,42 +1585,36 @@ function UploadField({ t, icon, value, onChange, accept, placeholder }) {
         </ChalkButton>
         <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }} onChange={(e) => handleFile(e.target.files?.[0])} />
         {value && !uploading && !error && (
-          <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ color: COLORS.chalkBlue, fontSize: 13.5, display: "flex", alignItems: "center", gap: 4 }}>
             <CheckCircle2 size={14} /> {t.fileUploaded}
           </div>
         )}
       </div>
-      {error && <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>{error}</div>}
-      <div style={{ color: COLORS.chalkDim, fontSize: 12 }}>{t.orLink}</div>
+      {error && <div style={{ color: COLORS.chalkPink, fontSize: 14 }}>{error}</div>}
+      <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{t.orLink}</div>
       <ChalkInput icon={icon} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} dir="ltr" />
     </div>
   );
 }
 
-const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", questions: [], durationMinutes: "", visibleTo: null, allowDownload: false };
+const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", visibleTo: null, allowDownload: false };
 
 function LessonsTab({ t, lessons, setLessons, students, classes }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_LESSON_FORM);
   const [previewId, setPreviewId] = useState(null);
 
+  const myLessons = useMemo(() => lessons.filter((l) => l.type !== "exam"), [lessons]);
+
   const add = (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    if (form.type === "exam" && form.questions.length === 0) {
-      alert(t.needAtLeastOneQuestion);
-      return;
-    }
     const base = { id: uid(), title: form.title, category: form.category.trim() || t.noCategory, desc: form.desc, type: form.type, visibleTo: form.visibleTo, createdAt: new Date().toISOString() };
     if (DOWNLOADABLE_TYPES.includes(form.type)) {
       base.url = form.url;
       base.allowDownload = !!form.allowDownload;
     }
     if (form.type === "text") base.content = form.content;
-    if (form.type === "exam") {
-      base.questions = form.questions;
-      base.durationMinutes = form.durationMinutes ? Number(form.durationMinutes) : null;
-    }
     setLessons([...lessons, base]);
     setForm(EMPTY_LESSON_FORM);
     setShowForm(false);
@@ -1584,9 +1623,9 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
 
   const grouped = useMemo(() => {
     const g = {};
-    lessons.forEach((l) => { g[l.category] = g[l.category] || []; g[l.category].push(l); });
+    myLessons.forEach((l) => { g[l.category] = g[l.category] || []; g[l.category].push(l); });
     return g;
-  }, [lessons]);
+  }, [myLessons]);
 
   return (
     <div>
@@ -1615,7 +1654,7 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
                 cursor: "pointer",
                 fontFamily: "Cairo, sans-serif",
                 fontWeight: 700,
-                fontSize: 13.5,
+                fontSize: 14.5,
               }}
             >
               {lt.icon} {lessonTypeLabel(t, lt.id)}
@@ -1633,53 +1672,46 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
 
         {form.type === "video" && (
           <div>
-            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonUrl}</span>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonUrl}</span>
             <UploadField t={t} icon={<Link2 size={16} color={COLORS.chalkDim} />} accept="video/*" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonUrlPh} />
           </div>
         )}
         {form.type === "pdf" && (
           <div>
-            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonPdfUrl}</span>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonPdfUrl}</span>
             <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept="application/pdf" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonPdfUrlPh} />
           </div>
         )}
         {form.type === "ppt" && (
           <div>
-            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonPptUrl}</span>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonPptUrl}</span>
             <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept=".ppt,.pptx" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonPptUrlPh} />
           </div>
         )}
         {form.type === "word" && (
           <div>
-            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonWordUrl}</span>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonWordUrl}</span>
             <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept=".doc,.docx" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonWordUrlPh} />
           </div>
         )}
         {DOWNLOADABLE_TYPES.includes(form.type) && (
           <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "Cairo, sans-serif" }}>
             <input type="checkbox" checked={!!form.allowDownload} onChange={(e) => setForm({ ...form, allowDownload: e.target.checked })} />
-            <span style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.allowDownloadLabel}</span>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15 }}>{t.allowDownloadLabel}</span>
           </label>
         )}
         {form.type === "text" && (
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
-            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.lessonContent}</span>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{t.lessonContent}</span>
             <textarea
               value={form.content}
               onChange={(e) => setForm({ ...form, content: e.target.value })}
               placeholder={t.lessonContentPh}
               rows={5}
-              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15, resize: "vertical" }}
+              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16, resize: "vertical" }}
             />
           </label>
         )}
-        {form.type === "exam" && (
-          <>
-            <ChalkInput label={t.examDuration} value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value.replace(/[^0-9]/g, "") })} placeholder={t.examDurationPh} dir="ltr" />
-            <ExamBuilder t={t} questions={form.questions} setQuestions={(qs) => setForm({ ...form, questions: qs })} />
-          </>
-        )}
-
         <ChalkInput label={t.lessonDesc} value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.lessonDescPh} />
         <LessonVisibilityPicker t={t} students={students} classes={classes} value={form.visibleTo} onChange={(v) => setForm({ ...form, visibleTo: v })} />
         <div style={{ display: "flex", gap: 10 }}>
@@ -1693,23 +1725,22 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
       </form>
       )}
 
-      {lessons.length === 0 ? (
+      {myLessons.length === 0 ? (
         <EmptyNote text={t.noLessons} />
       ) : (
         Object.entries(grouped).map(([cat, items]) => (
           <div key={cat} style={{ marginBottom: 20 }}>
-            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{cat}</div>
+            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 17, marginBottom: 8 }}>{cat}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {items.map((l) => (
                 <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div>
-                      <div style={{ color: COLORS.chalkBlue, fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                      <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
                         {lessonTypeIcon(l.type, 12)} {lessonTypeLabel(t, l.type)}
-                        {l.type === "exam" && ` · ${t.questionsCount((l.questions || []).length)}`}
                       </div>
                       <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
-                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
+                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
                       <button onClick={() => setPreviewId(previewId === l.id ? null : l.id)} style={iconBtnStyle} title={t.tryIt}>
@@ -1727,7 +1758,7 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
                         checked={!!l.allowDownload}
                         onChange={(e) => setLessons(lessons.map((x) => (x.id === l.id ? { ...x, allowDownload: e.target.checked } : x)))}
                       />
-                      <span style={{ color: COLORS.chalkDim, fontSize: 13 }}>{t.allowDownloadLabel}</span>
+                      <span style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.allowDownloadLabel}</span>
                     </label>
                   )}
                   <LessonVisibilityPicker
@@ -1739,10 +1770,196 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
                   />
                   {previewId === l.id && (
                     <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
-                      <div style={{ color: COLORS.chalkYellow, fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>{t.tryItPreviewNote}</div>
-                      {l.type === "text" && <div style={{ color: COLORS.chalk, fontSize: 14, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>}
-                      {l.type === "exam" && <ExamTaker t={t} lesson={l} entry={null} onStart={() => {}} onSubmit={() => {}} preview />}
+                      <div style={{ color: COLORS.chalkYellow, fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>{t.tryItPreviewNote}</div>
+                      {l.type === "text" && <div style={{ color: COLORS.chalk, fontSize: 15, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>}
                       {DOWNLOADABLE_TYPES.includes(l.type) && <LessonEmbed lesson={l} />}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+const EMPTY_EXAM_FORM = { title: "", category: "", desc: "", format: "builder", url: "", allowDownload: true, durationMinutes: "", questions: [], visibleTo: null };
+
+function ExamsTab({ t, lessons, setLessons, students, classes }) {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_EXAM_FORM);
+  const [previewId, setPreviewId] = useState(null);
+
+  const myExams = useMemo(() => lessons.filter((l) => l.type === "exam"), [lessons]);
+
+  const add = (e) => {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+    if (form.format === "builder" && form.questions.length === 0) {
+      alert(t.needAtLeastOneQuestion);
+      return;
+    }
+    if ((form.format === "pdf" || form.format === "word") && !form.url) return;
+    const base = {
+      id: uid(),
+      title: form.title,
+      category: form.category.trim() || t.noCategory,
+      desc: form.desc,
+      type: "exam",
+      examFormat: form.format,
+      visibleTo: form.visibleTo,
+      createdAt: new Date().toISOString(),
+    };
+    if (form.format === "builder") {
+      base.questions = form.questions;
+      base.durationMinutes = form.durationMinutes ? Number(form.durationMinutes) : null;
+    } else {
+      base.url = form.url;
+      base.allowDownload = !!form.allowDownload;
+    }
+    setLessons([...lessons, base]);
+    setForm(EMPTY_EXAM_FORM);
+    setShowForm(false);
+  };
+  const remove = (id) => setLessons(lessons.filter((l) => l.id !== id));
+
+  const grouped = useMemo(() => {
+    const g = {};
+    myExams.forEach((l) => { g[l.category] = g[l.category] || []; g[l.category].push(l); });
+    return g;
+  }, [myExams]);
+
+  const isFileExam = (l) => l.examFormat === "pdf" || l.examFormat === "word";
+
+  return (
+    <div>
+      {!showForm && (
+        <ChalkButton type="button" color={COLORS.chalkYellow} onClick={() => setShowForm(true)} style={{ marginBottom: 20 }}>
+          <Plus size={16} /> {t.addExam}
+        </ChalkButton>
+      )}
+      {showForm && (
+      <form onSubmit={add} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
+        <div>
+          <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.examFormatLabel}</span>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {EXAM_FORMATS.map((ef) => (
+              <button
+                key={ef.id}
+                type="button"
+                onClick={() => setForm({ ...form, format: ef.id })}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 14px",
+                  borderRadius: 20,
+                  border: `1.5px solid ${form.format === ef.id ? COLORS.chalkYellow : "rgba(201,162,39,0.3)"}`,
+                  background: form.format === ef.id ? "rgba(201,162,39,0.14)" : "transparent",
+                  color: form.format === ef.id ? COLORS.chalkYellow : COLORS.chalkDim,
+                  cursor: "pointer",
+                  fontFamily: "Cairo, sans-serif",
+                  fontWeight: 700,
+                  fontSize: 14.5,
+                }}
+              >
+                {ef.icon} {examFormatLabel(t, ef.id)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ flex: 2, minWidth: 180 }}>
+            <ChalkInput label={t.examTitle} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t.examTitlePh} />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <ChalkInput label={t.category} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder={t.categoryPh} />
+          </div>
+        </div>
+
+        {form.format === "builder" && (
+          <>
+            <ChalkInput label={t.examDuration} value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: e.target.value.replace(/[^0-9]/g, "") })} placeholder={t.examDurationPh} dir="ltr" />
+            <ExamBuilder t={t} questions={form.questions} setQuestions={(qs) => setForm({ ...form, questions: qs })} />
+          </>
+        )}
+
+        {(form.format === "pdf" || form.format === "word") && (
+          <div>
+            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.examFileUrl}</span>
+            <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept={form.format === "pdf" ? "application/pdf" : ".doc,.docx"} value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.examFileUrlPh} />
+            <div style={{ color: COLORS.chalkDim, fontSize: 13, marginTop: 8 }}>{t.examFileNote}</div>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "Cairo, sans-serif", marginTop: 8 }}>
+              <input type="checkbox" checked={!!form.allowDownload} onChange={(e) => setForm({ ...form, allowDownload: e.target.checked })} />
+              <span style={{ color: COLORS.chalkDim, fontSize: 15 }}>{t.allowDownloadLabel}</span>
+            </label>
+          </div>
+        )}
+
+        <ChalkInput label={t.lessonDesc} value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.lessonDescPh} />
+        <LessonVisibilityPicker t={t} students={students} classes={classes} value={form.visibleTo} onChange={(v) => setForm({ ...form, visibleTo: v })} />
+        <div style={{ display: "flex", gap: 10 }}>
+          <ChalkButton type="submit" color={COLORS.chalkYellow}>
+            <Plus size={16} /> {t.addExam}
+          </ChalkButton>
+          <ChalkButton type="button" variant="outline" color={COLORS.chalkDim} onClick={() => { setShowForm(false); setForm(EMPTY_EXAM_FORM); }}>
+            <X size={15} /> {t.back}
+          </ChalkButton>
+        </div>
+      </form>
+      )}
+
+      {myExams.length === 0 ? (
+        <EmptyNote text={t.noExams} />
+      ) : (
+        Object.entries(grouped).map(([cat, items]) => (
+          <div key={cat} style={{ marginBottom: 20 }}>
+            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 17, marginBottom: 8 }}>{cat}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {items.map((l) => (
+                <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 4, marginBottom: 2 }}>
+                        {lessonTypeIcon("exam", 12)} {examFormatLabel(t, l.examFormat)}
+                        {(!l.examFormat || l.examFormat === "builder") && ` · ${t.questionsCount((l.questions || []).length)}`}
+                      </div>
+                      <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
+                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => setPreviewId(previewId === l.id ? null : l.id)} style={iconBtnStyle} title={t.tryIt}>
+                        {previewId === l.id ? <EyeOff size={16} color={COLORS.chalkBlue} /> : <Eye size={16} color={COLORS.chalkBlue} />}
+                      </button>
+                      <button onClick={() => remove(l.id)} style={iconBtnStyle}>
+                        <Trash2 size={16} color={COLORS.chalkPink} />
+                      </button>
+                    </div>
+                  </div>
+                  {isFileExam(l) && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "Cairo, sans-serif" }}>
+                      <input
+                        type="checkbox"
+                        checked={!!l.allowDownload}
+                        onChange={(e) => setLessons(lessons.map((x) => (x.id === l.id ? { ...x, allowDownload: e.target.checked } : x)))}
+                      />
+                      <span style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.allowDownloadLabel}</span>
+                    </label>
+                  )}
+                  <LessonVisibilityPicker
+                    t={t}
+                    students={students}
+                    classes={classes}
+                    value={l.visibleTo}
+                    onChange={(v) => setLessons(lessons.map((x) => (x.id === l.id ? { ...x, visibleTo: v } : x)))}
+                  />
+                  {previewId === l.id && (
+                    <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
+                      <div style={{ color: COLORS.chalkYellow, fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>{t.tryItPreviewNote}</div>
+                      {isFileExam(l) ? <LessonEmbed lesson={l} /> : <ExamTaker t={t} lesson={l} entry={null} onStart={() => {}} onSubmit={() => {}} preview />}
                     </div>
                   )}
                 </div>
@@ -1795,15 +2012,15 @@ function ProgressTab({ t, lang, students, lessons, progress }) {
           <div key={s.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ color: COLORS.chalk, fontWeight: 800, fontSize: 15 }}>{s.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 13.5, direction: "ltr", textAlign: "right" }}>{s.username}</div>
+                <div style={{ color: COLORS.chalk, fontWeight: 800, fontSize: 16 }}>{s.name}</div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 14.5, direction: "ltr", textAlign: "right" }}>{s.username}</div>
               </div>
-              <span style={{ border: `1px solid ${badgeColor}`, color: badgeColor, borderRadius: 20, padding: "4px 12px", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap" }}>{badgeText}</span>
+              <span style={{ border: `1px solid ${badgeColor}`, color: badgeColor, borderRadius: 20, padding: "4px 12px", fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap" }}>{badgeText}</span>
             </div>
             <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
               <div style={{ width: `${stats.pct}%`, height: "100%", background: badgeColor, transition: "width 0.3s ease" }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13.5, color: COLORS.chalkDim }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14.5, color: COLORS.chalkDim }}>
               <span>{t.ofLessons(stats.done, stats.total, stats.pct)}</span>
               <span>{t.lastStudy(fmtDate(stats.lastAt, lang))}</span>
             </div>
@@ -1835,7 +2052,7 @@ function StudentLogin({ students, onFound, onTeacher, onRegister, lang, setLang 
   return (
     <Board lang={lang}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <button onClick={onTeacher} style={{ background: "none", border: "none", color: COLORS.chalkDim, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Cairo, sans-serif", fontSize: 13 }}>
+        <button onClick={onTeacher} style={{ background: "none", border: "none", color: COLORS.chalkDim, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Cairo, sans-serif", fontSize: 14 }}>
           <Settings size={14} /> {t.teacherLink}
         </button>
         <LangToggle lang={lang} setLang={setLang} />
@@ -1844,11 +2061,11 @@ function StudentLogin({ students, onFound, onTeacher, onRegister, lang, setLang 
       <form onSubmit={submit} style={{ maxWidth: 340, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
         <ChalkInput label={t.username} icon={<User size={16} color={COLORS.chalkDim} />} value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" autoFocus />
         <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} type="password" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
-        {err && <div style={{ color: COLORS.chalkPink, fontSize: 13 }}>{err}</div>}
+        {err && <div style={{ color: COLORS.chalkPink, fontSize: 14 }}>{err}</div>}
         <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }}>
           {t.login}
         </ChalkButton>
-        <button type="button" onClick={onRegister} style={{ background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 13.5, textAlign: "center" }}>
+        <button type="button" onClick={onRegister} style={{ background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 14.5, textAlign: "center" }}>
           {t.newStudentLink}
         </button>
       </form>
@@ -1899,7 +2116,7 @@ function StudentRegister({ classes, setStudents, students, back, lang, setLang }
   return (
     <Board lang={lang}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-        <button onClick={back} style={{ background: "none", border: "none", color: COLORS.chalkDim, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Cairo, sans-serif", fontSize: 13 }}>
+        <button onClick={back} style={{ background: "none", border: "none", color: COLORS.chalkDim, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Cairo, sans-serif", fontSize: 14 }}>
           <ArrowRight size={14} /> {t.backToLogin}
         </button>
         <LangToggle lang={lang} setLang={setLang} />
@@ -1911,11 +2128,11 @@ function StudentRegister({ classes, setStudents, students, back, lang, setLang }
         <ChalkInput label={t.phone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} dir="ltr" />
         <ChalkInput label={t.emailOptional} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" />
         <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
-          <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.assignClass}</span>
+          <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{t.assignClass}</span>
           <select
             value={form.classId}
             onChange={(e) => setForm({ ...form, classId: e.target.value })}
-            style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
+            style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16 }}
           >
             <option value="" style={{ color: "#000" }}>{t.chooseClassOpt}</option>
             {(classes || []).map((c) => (
@@ -1960,7 +2177,7 @@ function FillBlankQuestion({ t, q, value, onChange }) {
 
   return (
     <div>
-      <div style={{ color: COLORS.chalk, fontSize: 14, lineHeight: 2.2 }}>
+      <div style={{ color: COLORS.chalk, fontSize: 15, lineHeight: 2.2 }}>
         {parts.map((part, i) => (
           <span key={i}>
             {part}
@@ -2001,7 +2218,7 @@ function FillBlankQuestion({ t, q, value, onChange }) {
               background: picked === w ? "rgba(79,209,197,0.15)" : "transparent",
               color: picked === w ? COLORS.chalkBlue : COLORS.chalk,
               fontFamily: "Cairo, sans-serif",
-              fontSize: 13,
+              fontSize: 14,
               cursor: "pointer",
             }}
           >
@@ -2009,7 +2226,7 @@ function FillBlankQuestion({ t, q, value, onChange }) {
           </button>
         ))}
       </div>
-      <div style={{ color: COLORS.chalkDim, fontSize: 11.5, marginTop: 4 }}>{t.fillBlankHint}</div>
+      <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 4 }}>{t.fillBlankHint}</div>
     </div>
   );
 }
@@ -2021,12 +2238,12 @@ function MatchingQuestion({ t, q, value, onChange }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {(q.pairs || []).map((p) => (
         <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ flex: 1, color: COLORS.chalk, fontSize: 13.5 }}>{p.left}</div>
+          <div style={{ flex: 1, color: COLORS.chalk, fontSize: 14.5 }}>{p.left}</div>
           <ArrowRight size={14} color={COLORS.chalkDim} />
           <select
             value={map[p.id] || ""}
             onChange={(e) => onChange({ ...map, [p.id]: e.target.value })}
-            style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 6, padding: "6px 8px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 13.5 }}
+            style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 6, padding: "6px 8px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14.5 }}
           >
             <option value="" style={{ color: "#000" }}>{t.matchPick}</option>
             {rightOptions.map((r, i) => (
@@ -2117,9 +2334,9 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit, preview }) {
   if (entry?.examScore) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5 }}>{t.examAlreadySubmitted}</div>
-        <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 15 }}>{t.examYourScore(entry.examScore.correct, entry.examScore.total)}</div>
-        {entry.examScore.essayCount > 0 && <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.examEssayNote(entry.examScore.essayCount)}</div>}
+        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 14.5 }}>{t.examAlreadySubmitted}</div>
+        <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16 }}>{t.examYourScore(entry.examScore.correct, entry.examScore.total)}</div>
+        {entry.examScore.essayCount > 0 && <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.examEssayNote(entry.examScore.essayCount)}</div>}
       </div>
     );
   }
@@ -2136,24 +2353,24 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit, preview }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {!preview && durationMs != null && remaining != null && (
-        <div style={{ color: remaining < 60 ? COLORS.chalkPink : COLORS.chalkDim, fontSize: 13, fontWeight: 700 }}>
+        <div style={{ color: remaining < 60 ? COLORS.chalkPink : COLORS.chalkDim, fontSize: 14, fontWeight: 700 }}>
           {t.examTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`)}
         </div>
       )}
-      {!preview && <div style={{ color: COLORS.chalkDim, fontSize: 11.5 }}>{t.examAntiCheatNote}</div>}
+      {!preview && <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.examAntiCheatNote}</div>}
       {questions.map((q, qi) => {
         const kind = q.kind || "mcq";
         return (
           <div key={q.id} style={{ border: `1px solid rgba(201,162,39,0.25)`, borderRadius: 8, padding: 10 }}>
             {kind !== "fillblank" && (
-              <div style={{ color: COLORS.chalk, fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+              <div style={{ color: COLORS.chalk, fontWeight: 700, marginBottom: 6, fontSize: 15 }}>
                 {qi + 1}. {q.text}
               </div>
             )}
             {kind === "mcq" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {q.options.map((o) => (
-                  <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: COLORS.chalkDim, cursor: "pointer" }}>
+                  <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, color: COLORS.chalkDim, cursor: "pointer" }}>
                     <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === o.id} onChange={() => setAnswers({ ...answers, [q.id]: o.id })} />
                     {o.text}
                   </label>
@@ -2162,10 +2379,10 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit, preview }) {
             )}
             {kind === "truefalse" && (
               <div style={{ display: "flex", gap: 16 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalkDim, fontSize: 13.5, cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalkDim, fontSize: 14.5, cursor: "pointer" }}>
                   <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === true} onChange={() => setAnswers({ ...answers, [q.id]: true })} /> {t.trueLabel}
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalkDim, fontSize: 13.5, cursor: "pointer" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalkDim, fontSize: 14.5, cursor: "pointer" }}>
                   <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === false} onChange={() => setAnswers({ ...answers, [q.id]: false })} /> {t.falseLabel}
                 </label>
               </div>
@@ -2176,12 +2393,12 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit, preview }) {
                 onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
                 rows={4}
                 placeholder={t.essayAnswerPh}
-                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "8px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14, resize: "vertical" }}
+                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "8px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15, resize: "vertical" }}
               />
             )}
             {kind === "fillblank" && (
               <>
-                <div style={{ color: COLORS.chalkBlue, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{qi + 1}.</div>
+                <div style={{ color: COLORS.chalkBlue, fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{qi + 1}.</div>
                 <FillBlankQuestion t={t} q={q} value={answers[q.id]} onChange={(v) => setAnswers({ ...answers, [q.id]: v })} />
               </>
             )}
@@ -2234,7 +2451,7 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
       <Title lang={lang} sub={t.welcome(student.name)}>{t.brand}</Title>
 
       <div style={{ maxWidth: 500, margin: "0 auto 26px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: COLORS.chalkDim, marginBottom: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, color: COLORS.chalkDim, marginBottom: 6 }}>
           <span>{t.completed(stats.done, stats.total)}</span>
           <span>{stats.pct}%</span>
         </div>
@@ -2248,25 +2465,27 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
       ) : (
         Object.entries(grouped).map(([cat, items]) => (
           <div key={cat} style={{ marginBottom: 22 }}>
-            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{cat}</div>
+            <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 17, marginBottom: 8 }}>{cat}</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {items.map((l) => {
                 const type = l.type || "video";
                 const entry = (progress[student.id] && progress[student.id][l.id]) || null;
                 const watched = entry && entry.watched;
 
-                if (type === "exam") {
+                if (type === "exam" && (!l.examFormat || l.examFormat === "builder")) {
                   return (
                     <div key={l.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         {lessonTypeIcon("exam", 16)}
                         <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
                       </div>
-                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
+                      {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
                       <ExamTaker t={t} lesson={l} entry={entry} onStart={(startedAt) => startExam(l.id, startedAt)} onSubmit={(answers, score) => submitExam(l.id, answers, score)} />
                     </div>
                   );
                 }
+                // exam as a PDF/Word file (type === "exam" && examFormat is "pdf"/"word") falls through
+                // to the generic downloadable-file rendering below, same as a video/PDF/Word lesson.
 
                 if (type === "text") {
                   return (
@@ -2279,11 +2498,11 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                           <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
                             {lessonTypeIcon("text", 14)} {l.title}
                           </div>
-                          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
+                          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
                           {watched && entry.watchedAt && (
-                            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
+                            <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
                           )}
-                          <div style={{ color: COLORS.chalk, fontSize: 14, marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>
+                          <div style={{ color: COLORS.chalk, fontSize: 15, marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>
                         </div>
                       </div>
                     </div>
@@ -2303,19 +2522,19 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                           <div style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.7 : 1, display: "flex", alignItems: "center", gap: 6 }}>
                             {lessonTypeIcon(type, 14)} {l.title}
                           </div>
-                          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
+                          {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
                           {watched && entry.watchedAt && (
-                            <div style={{ color: COLORS.chalkDim, fontSize: 11.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
+                            <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
                           )}
                         </div>
                       </div>
                       {l.url && !embed && (
-                        <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
+                        <a href={l.url} target="_blank" rel="noreferrer" style={{ color: COLORS.chalkYellow, display: "flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 700, textDecoration: "none" }}>
                           {type === "pdf" ? t.openPdf : t.openLesson} <ExternalLink size={14} />
                         </a>
                       )}
                       {l.url && embed && l.allowDownload && (
-                        <a href={l.url} download target="_blank" rel="noreferrer" style={{ color: COLORS.chalkBlue, display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                        <a href={l.url} download target="_blank" rel="noreferrer" style={{ color: COLORS.chalkBlue, display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, textDecoration: "none" }}>
                           {t.downloadFile} <Upload size={13} style={{ transform: "rotate(180deg)" }} />
                         </a>
                       )}
@@ -2438,7 +2657,7 @@ export default function App() {
     return (
       <Board lang={lang}>
         <Title lang={lang}>{T[lang].brand}</Title>
-        <div style={{ textAlign: "center", color: connError ? COLORS.chalkPink : COLORS.chalkDim, fontSize: 14, lineHeight: 1.8 }}>
+        <div style={{ textAlign: "center", color: connError ? COLORS.chalkPink : COLORS.chalkDim, fontSize: 15, lineHeight: 1.8 }}>
           {connError ? "Connection problem — check firebaseConfig.js" : T[lang].loading}
         </div>
       </Board>
