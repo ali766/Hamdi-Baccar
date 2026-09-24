@@ -183,6 +183,15 @@ const T = {
     blockedLabel: "محظور",
     blockConfirm: "متأكد عايز تحظر الطالب ده؟ مش هيقدر يدخل تاني لحد ما تلغي الحظر.",
     editLesson: "تعديل",
+    richFontFamily: "نوع الخط",
+    richFontSize: "حجم الخط",
+    richBold: "تخين",
+    richUnderline: "تحته خط",
+    richSizeSmall: "صغير",
+    richSizeNormal: "عادي",
+    richSizeMedium: "متوسط",
+    richSizeLarge: "كبير",
+    richSizeXLarge: "كبير جدًا",
     lessonTitle: "عنوان الدرس",
     lessonTitlePh: "مثال: الوحدة الأولى - المعادلات",
     category: "القسم / الوحدة",
@@ -367,6 +376,15 @@ const T = {
     blockedLabel: "Blocked",
     blockConfirm: "Sure you want to block this student? They won't be able to log in until you unblock them.",
     editLesson: "Edit",
+    richFontFamily: "Font",
+    richFontSize: "Size",
+    richBold: "Bold",
+    richUnderline: "Underline",
+    richSizeSmall: "Small",
+    richSizeNormal: "Normal",
+    richSizeMedium: "Medium",
+    richSizeLarge: "Large",
+    richSizeXLarge: "Extra large",
     lessonTitle: "Lesson title",
     lessonTitlePh: "e.g. Unit 1 - Equations",
     category: "Category / Unit",
@@ -551,6 +569,15 @@ const T = {
     blockedLabel: "Bloqué",
     blockConfirm: "Bloquer cet élève ? Il ne pourra plus se connecter tant que vous ne le débloquez pas.",
     editLesson: "Modifier",
+    richFontFamily: "Police",
+    richFontSize: "Taille",
+    richBold: "Gras",
+    richUnderline: "Souligné",
+    richSizeSmall: "Petit",
+    richSizeNormal: "Normal",
+    richSizeMedium: "Moyen",
+    richSizeLarge: "Grand",
+    richSizeXLarge: "Très grand",
     lessonTitle: "Titre du cours",
     lessonTitlePh: "ex : Unité 1 - Équations",
     category: "Catégorie / Unité",
@@ -730,6 +757,7 @@ function Board({ lang, children }) {
         body { margin: 0; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .spin-icon { animation: spin 0.9s linear infinite; }
+        [data-placeholder]:empty:before { content: attr(data-placeholder); color: ${COLORS.chalkDim}; pointer-events: none; }
       `}</style>
       <div
         style={{
@@ -1833,6 +1861,101 @@ function UploadField({ t, icon, value, onChange, accept, placeholder }) {
   );
 }
 
+const RICH_FONTS = [
+  { value: "Cairo, sans-serif", label: "Cairo" },
+  { value: "'Aref Ruqaa', serif", label: "Aref Ruqaa" },
+  { value: "'Playfair Display', serif", label: "Playfair Display" },
+  { value: "Arial, sans-serif", label: "Arial" },
+  { value: "Georgia, serif", label: "Georgia" },
+  { value: "'Courier New', monospace", label: "Courier New" },
+];
+// document.execCommand("fontSize", ...) only accepts the legacy 1-7 scale, not px —
+// mapped here to friendly size labels for the toolbar dropdown.
+const RICH_SIZES = [
+  { value: "2", key: "richSizeSmall" },
+  { value: "3", key: "richSizeNormal" },
+  { value: "4", key: "richSizeMedium" },
+  { value: "5", key: "richSizeLarge" },
+  { value: "6", key: "richSizeXLarge" },
+];
+
+function RichTextEditor({ t, value, onChange, placeholder }) {
+  const ref = useRef(null);
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (ref.current && !initialized.current) {
+      ref.current.innerHTML = value || "";
+      initialized.current = true;
+    }
+  }, [value]);
+
+  const exec = (cmd, val = null) => {
+    ref.current?.focus();
+    document.execCommand(cmd, false, val);
+    onChange(ref.current.innerHTML);
+  };
+
+  const toolBtnStyle = {
+    border: `1px solid rgba(201,162,39,0.35)`,
+    background: "transparent",
+    color: COLORS.chalk,
+    borderRadius: 6,
+    padding: "6px 12px",
+    cursor: "pointer",
+    fontFamily: "Cairo, sans-serif",
+    fontSize: 13.5,
+  };
+  const selectStyle = {
+    background: "rgba(255,255,255,0.03)",
+    border: `1px solid rgba(201,162,39,0.35)`,
+    borderRadius: 6,
+    padding: "6px 8px",
+    color: COLORS.chalk,
+    fontFamily: "Cairo, sans-serif",
+    fontSize: 13.5,
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+        <select defaultValue="" onChange={(e) => e.target.value && exec("fontName", e.target.value)} style={selectStyle}>
+          <option value="" disabled style={{ color: "#000" }}>{t.richFontFamily}</option>
+          {RICH_FONTS.map((f) => (
+            <option key={f.value} value={f.value} style={{ fontFamily: f.value, color: "#000" }}>{f.label}</option>
+          ))}
+        </select>
+        <select defaultValue="" onChange={(e) => e.target.value && exec("fontSize", e.target.value)} style={selectStyle}>
+          <option value="" disabled style={{ color: "#000" }}>{t.richFontSize}</option>
+          {RICH_SIZES.map((s) => (
+            <option key={s.value} value={s.value} style={{ color: "#000" }}>{t[s.key]}</option>
+          ))}
+        </select>
+        <button type="button" onClick={() => exec("bold")} style={{ ...toolBtnStyle, fontWeight: 800 }} title={t.richBold}>B</button>
+        <button type="button" onClick={() => exec("underline")} style={{ ...toolBtnStyle, textDecoration: "underline" }} title={t.richUnderline}>U</button>
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        data-placeholder={placeholder}
+        onInput={() => onChange(ref.current.innerHTML)}
+        style={{
+          minHeight: 140,
+          background: "rgba(255,255,255,0.03)",
+          border: `1px solid rgba(201,162,39,0.35)`,
+          borderRadius: 8,
+          padding: "10px 12px",
+          color: COLORS.chalk,
+          fontFamily: "Cairo, sans-serif",
+          fontSize: 16,
+          lineHeight: 1.7,
+        }}
+      />
+    </div>
+  );
+}
+
 const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", visibleTo: null, allowDownload: false };
 
 function LessonsTab({ t, lessons, setLessons, students, classes, externalEditId, onExternalEditHandled }) {
@@ -1969,13 +2092,7 @@ function LessonsTab({ t, lessons, setLessons, students, classes, externalEditId,
         {form.type === "text" && (
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
             <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{t.lessonContent}</span>
-            <textarea
-              value={form.content}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-              placeholder={t.lessonContentPh}
-              rows={5}
-              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16, resize: "vertical" }}
-            />
+            <RichTextEditor key={editingId || "new"} t={t} value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder={t.lessonContentPh} />
           </label>
         )}
         <ChalkInput label={t.lessonDesc} value={form.desc} onChange={(e) => setForm({ ...form, desc: e.target.value })} placeholder={t.lessonDescPh} />
@@ -2040,7 +2157,7 @@ function LessonsTab({ t, lessons, setLessons, students, classes, externalEditId,
                   {previewId === l.id && (
                     <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
                       <div style={{ color: COLORS.chalkYellow, fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>{t.tryItPreviewNote}</div>
-                      {l.type === "text" && <div style={{ color: COLORS.chalk, fontSize: 15, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>}
+                      {l.type === "text" && <div style={{ color: COLORS.chalk, fontSize: 15, lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: l.content }} />}
                       {DOWNLOADABLE_TYPES.includes(l.type) && <LessonEmbed lesson={l} />}
                     </div>
                   )}
@@ -2845,7 +2962,7 @@ function StudentDashboard({ back, student, students, setStudents, lessons, progr
               {watched && entry.watchedAt && (
                 <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 2 }}>{t.studiedOn(fmtDate(entry.watchedAt, lang))}</div>
               )}
-              <div style={{ color: COLORS.chalk, fontSize: 15, marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>
+              <div style={{ color: COLORS.chalk, fontSize: 15, marginTop: 8, lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: l.content }} />
             </div>
           </div>
         </div>
