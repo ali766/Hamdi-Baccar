@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2 } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2, Eye, EyeOff } from "lucide-react";
 import { uploadToCloudinary } from "./cloudinary";
 import {
   subscribeToStudents,
@@ -25,7 +25,7 @@ function sameData(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function toEmbedUrl(url) {
+function toEmbedUrl(url, opts = {}) {
   if (!url) return null;
   const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([\w-]{6,})/);
   if (yt) return { type: "video", src: `https://www.youtube.com/embed/${yt[1]}` };
@@ -35,11 +35,43 @@ function toEmbedUrl(url) {
   if (/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url) || /\/video\/upload\//.test(url)) {
     return { type: "file-video", src: url };
   }
-  // ملف PDF مباشر: يتعرض جوه الصفحة زي أي PDF من المتصفح
+  // ملف PDF مباشر: يتعرض جوه الصفحة زي أي PDF من المتصفح. #toolbar=0 بيخفي شريط
+  // أدوات الـ PDF (وبالتالي زرار التحميل/الطباعة) لما المدرس يكون مسكّر الداونلود.
   if (/\.pdf(\?.*)?$/i.test(url) || /\/(image|raw)\/upload\/[^]*\.pdf/i.test(url)) {
-    return { type: "frame", src: url };
+    return { type: "frame", src: opts.allowDownload ? url : `${url}#toolbar=0` };
+  }
+  // PowerPoint / Word: تتعرض جوه الصفحة عن طريق Office Online Viewer (لازم الرابط يكون عام/متاح على النت)
+  if (/\.(ppt|pptx|doc|docx)(\?.*)?$/i.test(url)) {
+    return { type: "frame", src: `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}` };
   }
   return null;
+}
+
+// عرض درس (فيديو/PDF/PPT/Word) جوه الصفحة، بيستخدم في شاشة المدرس (للتجربة) وشاشة الطالب
+function LessonEmbed({ lesson }) {
+  const embed = toEmbedUrl(lesson.url, { allowDownload: lesson.allowDownload });
+  if (!embed) return null;
+  if (embed.type === "file-video") {
+    return (
+      <video
+        src={embed.src}
+        controls
+        controlsList={lesson.allowDownload ? "noremoteplayback" : "nodownload noremoteplayback"}
+        disablePictureInPicture
+        onContextMenu={(e) => !lesson.allowDownload && e.preventDefault()}
+        style={{ width: "100%", maxWidth: 480, borderRadius: 8, background: "#000" }}
+      />
+    );
+  }
+  return (
+    <iframe
+      src={embed.src}
+      title={lesson.title}
+      allow="autoplay; encrypted-media; fullscreen"
+      allowFullScreen
+      style={{ width: "100%", maxWidth: 480, aspectRatio: lesson.type === "video" ? "16/9" : "3/4", border: "none", borderRadius: 8 }}
+    />
+  );
 }
 
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap');`;
@@ -85,6 +117,17 @@ const T = {
     password: "كلمة السر",
     wrongLogin: "اسم المستخدم أو كلمة السر غلط",
     login: "دخول",
+    newStudentLink: "طالب جديد؟ سجّل هنا",
+    registerSubtitle: "سجّل بياناتك وهيوافق عليك المدرّس قبل ما تقدر تدخل",
+    registerSentSub: "تم إرسال طلبك! استنى موافقة المدرّس، وهيديك اسم المستخدم وكلمة السر.",
+    familyName: "اسم العائلة",
+    phone: "رقم التليفون",
+    emailOptional: "الإيميل (اختياري)",
+    chooseClassOpt: "اختار الفصل",
+    sendRegistration: "إرسال",
+    backToLogin: "رجوع لتسجيل الدخول",
+    pendingApprovalTitle: (n) => `طلبات تسجيل محتاجة موافقة (${n})`,
+    approve: "موافقة",
     back: "رجوع",
     logout: "خروج",
     teacherLogin: "دخول المدرّس",
@@ -136,10 +179,20 @@ const T = {
     noCategory: "بدون قسم",
     typeVideo: "فيديو",
     typePdf: "PDF",
+    typePpt: "بوربوينت",
+    typeWord: "Word",
     typeText: "درس مكتوب",
     typeExam: "امتحان",
     lessonPdfUrl: "رابط الـ PDF (Google Drive)",
     lessonPdfUrlPh: "https://drive.google.com/...",
+    lessonPptUrl: "ملف البوربوينت",
+    lessonPptUrlPh: "https://...",
+    lessonWordUrl: "ملف الـ Word",
+    lessonWordUrlPh: "https://...",
+    allowDownloadLabel: "السماح للطالب بتحميل الملف",
+    downloadFile: "تحميل الملف",
+    tryIt: "جرّب الدرس",
+    tryItPreviewNote: "معاينة — كده بالظبط الطالب هيشوف الدرس ده",
     lessonContent: "محتوى الدرس",
     lessonContentPh: "اكتب محتوى الدرس هنا...",
     examQuestions: "أسئلة الامتحان",
@@ -178,6 +231,27 @@ const T = {
     examDurationPh: "مثال: 30",
     examTimeLeft: (mmss) => `الوقت المتبقي: ${mmss}`,
     examTimeUp: "خلص الوقت! الامتحان اتقفل تلقائي وتم تسليمه.",
+    qkMcq: "اختياري (a,b,c)",
+    qkTrueFalse: "صح / غلط",
+    qkEssay: "سؤال مقالي",
+    qkFillBlank: "أكمل الفراغ",
+    qkMatching: "توصيل",
+    fillBlankTextHint: "اكتب القطعة، وحط ___ (ثلاث شرطات) في مكان كل فراغ",
+    fillBlankTextPh: "الشمس ___ من الشرق والسماء لونها ___",
+    blanksAnswersLabel: "إجابات الفراغات بالترتيب",
+    blankWordPh: "الكلمة الصح",
+    addBlank: "إضافة فراغ",
+    matchLeftPh: "العمود الأول",
+    matchRightPh: "العمود التاني",
+    addPair: "إضافة زوج",
+    trueLabel: "صح",
+    falseLabel: "غلط",
+    essayHint: "الطالب هيكتب إجابته بحرية، ومش بيتحسب أوتوماتيك في الدرجة — لازم تراجعها بنفسك.",
+    essayAnswerPh: "اكتب إجابتك هنا...",
+    matchPick: "اختار...",
+    fillBlankHint: "دوس على الكلمة تحت وبعدين دوس على مكان الفراغ عشان تحطها",
+    examEssayNote: (n) => `فيه ${n} سؤال مقالي محتاج مراجعة المدرس، مش داخل في الدرجة دي.`,
+    examAntiCheatNote: "لو غيّرت التبويب أو الشاشة أثناء الامتحان هيتقفل ويتسلّم تلقائي.",
     studyingWell: "بيذاكر كويس",
     needsFollowup: "محتاج متابعة",
     notStudied: "لسه ماذاكرش",
@@ -198,6 +272,17 @@ const T = {
     username: "Username",
     password: "Password",
     wrongLogin: "Wrong username or password",
+    newStudentLink: "New student? Register here",
+    registerSubtitle: "Register your details — your teacher must approve you before you can log in",
+    registerSentSub: "Your request was sent! Wait for your teacher's approval — they'll give you a username and password.",
+    familyName: "Family name",
+    phone: "Phone number",
+    emailOptional: "Email (optional)",
+    chooseClassOpt: "Choose a class",
+    sendRegistration: "Send",
+    backToLogin: "Back to login",
+    pendingApprovalTitle: (n) => `Registration requests awaiting approval (${n})`,
+    approve: "Approve",
     login: "Log in",
     back: "Back",
     logout: "Log out",
@@ -250,10 +335,20 @@ const T = {
     noCategory: "Uncategorized",
     typeVideo: "Video",
     typePdf: "PDF",
+    typePpt: "PowerPoint",
+    typeWord: "Word",
     typeText: "Written lesson",
     typeExam: "Exam",
     lessonPdfUrl: "PDF link (Google Drive)",
     lessonPdfUrlPh: "https://drive.google.com/...",
+    lessonPptUrl: "PowerPoint file",
+    lessonPptUrlPh: "https://...",
+    lessonWordUrl: "Word file",
+    lessonWordUrlPh: "https://...",
+    allowDownloadLabel: "Allow the student to download this file",
+    downloadFile: "Download file",
+    tryIt: "Try this lesson",
+    tryItPreviewNote: "Preview — this is exactly what the student will see",
     lessonContent: "Lesson content",
     lessonContentPh: "Write the lesson content here...",
     examQuestions: "Exam questions",
@@ -292,6 +387,27 @@ const T = {
     examDurationPh: "e.g. 30",
     examTimeLeft: (mmss) => `Time left: ${mmss}`,
     examTimeUp: "Time's up! The exam was locked and submitted automatically.",
+    qkMcq: "Multiple choice (a,b,c)",
+    qkTrueFalse: "True / False",
+    qkEssay: "Essay",
+    qkFillBlank: "Fill in the blank",
+    qkMatching: "Matching",
+    fillBlankTextHint: "Write the passage, and put ___ (three underscores) where each blank goes",
+    fillBlankTextPh: "The sun ___ in the east and the sky is ___",
+    blanksAnswersLabel: "Blank answers, in order",
+    blankWordPh: "Correct word",
+    addBlank: "Add blank",
+    matchLeftPh: "Left column",
+    matchRightPh: "Right column",
+    addPair: "Add pair",
+    trueLabel: "True",
+    falseLabel: "False",
+    essayHint: "The student writes freely; this isn't auto-graded — review it yourself.",
+    essayAnswerPh: "Write your answer here...",
+    matchPick: "Choose...",
+    fillBlankHint: "Tap a word below, then tap the blank to place it",
+    examEssayNote: (n) => `${n} essay question(s) need teacher review and aren't included in this score.`,
+    examAntiCheatNote: "If you switch tabs or apps during the exam, it will lock and submit automatically.",
     studyingWell: "Studying well",
     needsFollowup: "Needs follow-up",
     notStudied: "Hasn't started",
@@ -312,6 +428,17 @@ const T = {
     username: "Nom d'utilisateur",
     password: "Mot de passe",
     wrongLogin: "Nom d'utilisateur ou mot de passe incorrect",
+    newStudentLink: "Nouvel étudiant ? Inscrivez-vous ici",
+    registerSubtitle: "Inscrivez vos informations — votre professeur doit vous approuver avant de pouvoir vous connecter",
+    registerSentSub: "Votre demande a été envoyée ! Attendez l'approbation de votre professeur — il vous donnera un nom d'utilisateur et un mot de passe.",
+    familyName: "Nom de famille",
+    phone: "Numéro de téléphone",
+    emailOptional: "E-mail (optionnel)",
+    chooseClassOpt: "Choisir une classe",
+    sendRegistration: "Envoyer",
+    backToLogin: "Retour à la connexion",
+    pendingApprovalTitle: (n) => `Demandes d'inscription en attente (${n})`,
+    approve: "Approuver",
     login: "Connexion",
     back: "Retour",
     logout: "Déconnexion",
@@ -364,10 +491,20 @@ const T = {
     noCategory: "Sans catégorie",
     typeVideo: "Vidéo",
     typePdf: "PDF",
+    typePpt: "PowerPoint",
+    typeWord: "Word",
     typeText: "Cours écrit",
     typeExam: "Examen",
     lessonPdfUrl: "Lien du PDF (Google Drive)",
     lessonPdfUrlPh: "https://drive.google.com/...",
+    lessonPptUrl: "Fichier PowerPoint",
+    lessonPptUrlPh: "https://...",
+    lessonWordUrl: "Fichier Word",
+    lessonWordUrlPh: "https://...",
+    allowDownloadLabel: "Autoriser l'étudiant à télécharger ce fichier",
+    downloadFile: "Télécharger le fichier",
+    tryIt: "Essayer ce cours",
+    tryItPreviewNote: "Aperçu — c'est exactement ce que l'étudiant verra",
     lessonContent: "Contenu du cours",
     lessonContentPh: "Écrivez le contenu du cours ici...",
     examQuestions: "Questions de l'examen",
@@ -406,6 +543,27 @@ const T = {
     examDurationPh: "ex : 30",
     examTimeLeft: (mmss) => `Temps restant : ${mmss}`,
     examTimeUp: "Temps écoulé ! L'examen a été verrouillé et soumis automatiquement.",
+    qkMcq: "Choix multiple (a,b,c)",
+    qkTrueFalse: "Vrai / Faux",
+    qkEssay: "Question ouverte",
+    qkFillBlank: "Texte à trous",
+    qkMatching: "Association",
+    fillBlankTextHint: "Écrivez le texte, et mettez ___ (trois tirets bas) à la place de chaque trou",
+    fillBlankTextPh: "Le soleil se lève à l'___ et le ciel est ___",
+    blanksAnswersLabel: "Réponses des trous, dans l'ordre",
+    blankWordPh: "Mot correct",
+    addBlank: "Ajouter un trou",
+    matchLeftPh: "Colonne gauche",
+    matchRightPh: "Colonne droite",
+    addPair: "Ajouter une paire",
+    trueLabel: "Vrai",
+    falseLabel: "Faux",
+    essayHint: "L'étudiant répond librement ; non noté automatiquement — à corriger vous-même.",
+    essayAnswerPh: "Écrivez votre réponse ici...",
+    matchPick: "Choisir...",
+    fillBlankHint: "Touchez un mot ci-dessous, puis touchez le trou pour le placer",
+    examEssayNote: (n) => `${n} question(s) ouverte(s) à corriger par l'enseignant, non incluses dans cette note.`,
+    examAntiCheatNote: "Si vous changez d'onglet ou d'application pendant l'examen, il se verrouille et se soumet automatiquement.",
     studyingWell: "Étudie bien",
     needsFollowup: "À suivre",
     notStudied: "Pas encore commencé",
@@ -898,6 +1056,51 @@ function ClassesTab({ t, classes, setClasses, students }) {
   );
 }
 
+function PendingStudentRow({ t, s, classNameFor, onApprove, onReject }) {
+  const [username, setUsername] = useState((s.email || s.phone || "").split("@")[0] || "");
+  const [password, setPassword] = useState(genPassword());
+
+  return (
+    <div style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+        <div>
+          <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{s.name}</div>
+          <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{s.phone} {s.email && `· ${s.email}`}</div>
+          {classNameFor(s.classId) && (
+            <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+              <GraduationCap size={12} /> {classNameFor(s.classId)}
+            </div>
+          )}
+        </div>
+        <button onClick={() => onReject(s.id)} style={iconBtnStyle}>
+          <Trash2 size={16} color={COLORS.chalkPink} />
+        </button>
+      </div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ flex: 1, minWidth: 140 }}>
+          <ChalkInput label={t.chooseUsername} value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" />
+        </div>
+        <div style={{ flex: 1, minWidth: 140 }}>
+          <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
+        </div>
+        <ChalkButton type="button" variant="outline" color={COLORS.chalkBlue} onClick={() => setPassword(genPassword())}>
+          {t.generatePass}
+        </ChalkButton>
+        <ChalkButton
+          type="button"
+          color={COLORS.chalkYellow}
+          onClick={() => {
+            if (!username.trim() || !password.trim()) return;
+            onApprove(s.id, username.trim().toLowerCase(), password.trim());
+          }}
+        >
+          <CheckCircle2 size={16} /> {t.approve}
+        </ChalkButton>
+      </div>
+    </div>
+  );
+}
+
 function StudentsTab({ t, students, setStudents, classes }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -905,16 +1108,21 @@ function StudentsTab({ t, students, setStudents, classes }) {
   const [classId, setClassId] = useState("");
   const [copiedId, setCopiedId] = useState(null);
 
+  const pending = students.filter((s) => s.status === "pending");
+  const approved = students.filter((s) => s.status !== "pending");
+
   const add = (e) => {
     e.preventDefault();
     if (!name.trim() || !username.trim() || !password.trim()) return;
-    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), classId: classId || null, createdAt: new Date().toISOString() }]);
+    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), classId: classId || null, status: "approved", createdAt: new Date().toISOString() }]);
     setName("");
     setUsername("");
     setPassword("");
     setClassId("");
   };
   const remove = (id) => setStudents(students.filter((s) => s.id !== id));
+  const approvePending = (id, uname, pass) =>
+    setStudents(students.map((s) => (s.id === id ? { ...s, username: uname, password: pass, status: "approved" } : s)));
   const setStudentClass = (id, cid) => setStudents(students.map((s) => (s.id === id ? { ...s, classId: cid || null } : s)));
   const classNameFor = (cid) => (classes || []).find((c) => c.id === cid)?.name || null;
 
@@ -928,6 +1136,16 @@ function StudentsTab({ t, students, setStudents, classes }) {
 
   return (
     <div>
+      {pending.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 15, marginBottom: 8 }}>{t.pendingApprovalTitle(pending.length)}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {pending.map((s) => (
+              <PendingStudentRow key={s.id} t={t} s={s} classNameFor={classNameFor} onApprove={approvePending} onReject={remove} />
+            ))}
+          </div>
+        </div>
+      )}
       <form onSubmit={add} style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 22, alignItems: "flex-end" }}>
         <div style={{ flex: 1, minWidth: 160 }}>
           <ChalkInput label={t.studentName} icon={<User size={16} color={COLORS.chalkDim} />} value={name} onChange={(e) => setName(e.target.value)} placeholder={t.studentNamePh} />
@@ -961,11 +1179,11 @@ function StudentsTab({ t, students, setStudents, classes }) {
         </ChalkButton>
       </form>
 
-      {students.length === 0 ? (
+      {approved.length === 0 ? (
         <EmptyNote text={t.noStudents} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {students.map((s) => (
+          {approved.map((s) => (
             <div key={s.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10 }}>
               <div>
                 <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 15 }}>{s.name}</div>
@@ -1082,31 +1300,48 @@ function LessonVisibilityPicker({ t, students, classes, value, onChange }) {
 const LESSON_TYPES = [
   { id: "video", icon: <Video size={15} /> },
   { id: "pdf", icon: <FileText size={15} /> },
+  { id: "ppt", icon: <FileText size={15} /> },
+  { id: "word", icon: <FileText size={15} /> },
   { id: "text", icon: <PenLine size={15} /> },
   { id: "exam", icon: <ListChecks size={15} /> },
 ];
+const DOWNLOADABLE_TYPES = ["video", "pdf", "ppt", "word"];
 function lessonTypeLabel(t, type) {
-  return { video: t.typeVideo, pdf: t.typePdf, text: t.typeText, exam: t.typeExam }[type || "video"];
+  return { video: t.typeVideo, pdf: t.typePdf, ppt: t.typePpt, word: t.typeWord, text: t.typeText, exam: t.typeExam }[type || "video"];
 }
 function lessonTypeIcon(type, size = 15) {
-  const map = { video: <Video size={size} />, pdf: <FileText size={size} />, text: <PenLine size={size} />, exam: <ListChecks size={size} /> };
+  const map = { video: <Video size={size} />, pdf: <FileText size={size} />, ppt: <FileText size={size} />, word: <FileText size={size} />, text: <PenLine size={size} />, exam: <ListChecks size={size} /> };
   return map[type || "video"];
 }
 
-function emptyQuestion() {
-  return {
-    id: uid(),
-    text: "",
-    options: [
-      { id: uid(), text: "" },
-      { id: uid(), text: "" },
-    ],
-    correctOptionId: null,
-  };
+const QUESTION_KINDS = ["mcq", "truefalse", "essay", "fillblank", "matching"];
+function questionKindLabel(t, kind) {
+  return { mcq: t.qkMcq, truefalse: t.qkTrueFalse, essay: t.qkEssay, fillblank: t.qkFillBlank, matching: t.qkMatching }[kind || "mcq"];
+}
+
+function emptyQuestion(kind = "mcq") {
+  const base = { id: uid(), kind, text: "" };
+  if (kind === "mcq") {
+    return { ...base, options: [{ id: uid(), text: "" }, { id: uid(), text: "" }], correctOptionId: null };
+  }
+  if (kind === "truefalse") return { ...base, correctAnswer: true };
+  if (kind === "essay") return base;
+  if (kind === "fillblank") return { ...base, blanks: [""] };
+  if (kind === "matching") return { ...base, pairs: [{ id: uid(), left: "", right: "" }, { id: uid(), left: "", right: "" }] };
+  return base;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function ExamBuilder({ t, questions, setQuestions }) {
-  const addQuestion = () => setQuestions([...questions, emptyQuestion()]);
+  const addQuestion = (kind) => setQuestions([...questions, emptyQuestion(kind)]);
   const removeQuestion = (qid) => setQuestions(questions.filter((q) => q.id !== qid));
   const updateQuestion = (qid, patch) => setQuestions(questions.map((q) => (q.id === qid ? { ...q, ...patch } : q)));
   const addOption = (qid) => updateQuestion(qid, { options: [...questions.find((q) => q.id === qid).options, { id: uid(), text: "" }] });
@@ -1121,61 +1356,155 @@ function ExamBuilder({ t, questions, setQuestions }) {
       correctOptionId: q.correctOptionId === oid ? null : q.correctOptionId,
     });
   };
+  const addBlank = (qid) => updateQuestion(qid, { blanks: [...questions.find((q) => q.id === qid).blanks, ""] });
+  const updateBlank = (qid, bi, word) => {
+    const q = questions.find((q) => q.id === qid);
+    updateQuestion(qid, { blanks: q.blanks.map((b, i) => (i === bi ? word : b)) });
+  };
+  const removeBlank = (qid, bi) => {
+    const q = questions.find((q) => q.id === qid);
+    updateQuestion(qid, { blanks: q.blanks.filter((_, i) => i !== bi) });
+  };
+  const addPair = (qid) => updateQuestion(qid, { pairs: [...questions.find((q) => q.id === qid).pairs, { id: uid(), left: "", right: "" }] });
+  const updatePair = (qid, pid, patch) => {
+    const q = questions.find((q) => q.id === qid);
+    updateQuestion(qid, { pairs: q.pairs.map((p) => (p.id === pid ? { ...p, ...patch } : p)) });
+  };
+  const removePair = (qid, pid) => {
+    const q = questions.find((q) => q.id === qid);
+    updateQuestion(qid, { pairs: q.pairs.filter((p) => p.id !== pid) });
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.examQuestions}</div>
-      {questions.map((q, qi) => (
-        <div key={q.id} style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <div style={{ flex: 1 }}>
-              <ChalkInput
-                label={`${t.questionText} #${qi + 1}`}
-                value={q.text}
-                onChange={(e) => updateQuestion(q.id, { text: e.target.value })}
-                placeholder={t.questionTextPh}
-              />
+      {questions.map((q, qi) => {
+        const kind = q.kind || "mcq";
+        return (
+          <div key={q.id} style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ color: COLORS.chalkBlue, fontSize: 12, fontWeight: 700 }}>#{qi + 1} · {questionKindLabel(t, kind)}</span>
+              <button type="button" onClick={() => removeQuestion(q.id)} style={iconBtnStyle} title={t.removeQuestion}>
+                <Trash2 size={16} color={COLORS.chalkPink} />
+              </button>
             </div>
-            <button type="button" onClick={() => removeQuestion(q.id)} style={{ ...iconBtnStyle, marginTop: 22 }} title={t.removeQuestion}>
-              <Trash2 size={16} color={COLORS.chalkPink} />
-            </button>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {q.options.map((o, oi) => (
-              <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="radio"
-                  name={`correct-${q.id}`}
-                  checked={q.correctOptionId === o.id}
-                  onChange={() => updateQuestion(q.id, { correctOptionId: o.id })}
-                  title={t.markCorrect}
+
+            {kind === "fillblank" ? (
+              <div>
+                <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600, display: "block", marginBottom: 4 }}>{t.fillBlankTextHint}</span>
+                <textarea
+                  value={q.text}
+                  onChange={(e) => updateQuestion(q.id, { text: e.target.value })}
+                  placeholder={t.fillBlankTextPh}
+                  rows={3}
+                  style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14, resize: "vertical" }}
                 />
-                <input
-                  value={o.text}
-                  onChange={(e) => updateOption(q.id, o.id, e.target.value)}
-                  placeholder={t.optionText(oi + 1)}
-                  style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
-                />
-                {q.options.length > 2 && (
-                  <button type="button" onClick={() => removeOption(q.id, o.id)} style={iconBtnStyle}>
-                    <X size={14} color={COLORS.chalkDim} />
-                  </button>
-                )}
               </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => addOption(q.id)}
-              style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}
-            >
-              + {t.addOption}
-            </button>
+            ) : (
+              <ChalkInput label={t.questionText} value={q.text} onChange={(e) => updateQuestion(q.id, { text: e.target.value })} placeholder={t.questionTextPh} />
+            )}
+
+            {kind === "mcq" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {q.options.map((o, oi) => (
+                  <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="radio" name={`correct-${q.id}`} checked={q.correctOptionId === o.id} onChange={() => updateQuestion(q.id, { correctOptionId: o.id })} title={t.markCorrect} />
+                    <input
+                      value={o.text}
+                      onChange={(e) => updateOption(q.id, o.id, e.target.value)}
+                      placeholder={t.optionText(oi + 1)}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                    />
+                    {q.options.length > 2 && (
+                      <button type="button" onClick={() => removeOption(q.id, o.id)} style={iconBtnStyle}>
+                        <X size={14} color={COLORS.chalkDim} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" onClick={() => addOption(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
+                  + {t.addOption}
+                </button>
+              </div>
+            )}
+
+            {kind === "truefalse" && (
+              <div style={{ display: "flex", gap: 16 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalk, fontSize: 14, cursor: "pointer" }}>
+                  <input type="radio" name={`tf-${q.id}`} checked={q.correctAnswer === true} onChange={() => updateQuestion(q.id, { correctAnswer: true })} /> {t.trueLabel}
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalk, fontSize: 14, cursor: "pointer" }}>
+                  <input type="radio" name={`tf-${q.id}`} checked={q.correctAnswer === false} onChange={() => updateQuestion(q.id, { correctAnswer: false })} /> {t.falseLabel}
+                </label>
+              </div>
+            )}
+
+            {kind === "essay" && <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.essayHint}</div>}
+
+            {kind === "fillblank" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ color: COLORS.chalkDim, fontSize: 13, fontWeight: 600 }}>{t.blanksAnswersLabel}</span>
+                {q.blanks.map((b, bi) => (
+                  <div key={bi} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ color: COLORS.chalkBlue, fontSize: 12.5, minWidth: 20 }}>{bi + 1}.</span>
+                    <input
+                      value={b}
+                      onChange={(e) => updateBlank(q.id, bi, e.target.value)}
+                      placeholder={t.blankWordPh}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                    />
+                    {q.blanks.length > 1 && (
+                      <button type="button" onClick={() => removeBlank(q.id, bi)} style={iconBtnStyle}>
+                        <X size={14} color={COLORS.chalkDim} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" onClick={() => addBlank(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
+                  + {t.addBlank}
+                </button>
+              </div>
+            )}
+
+            {kind === "matching" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {q.pairs.map((p) => (
+                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input
+                      value={p.left}
+                      onChange={(e) => updatePair(q.id, p.id, { left: e.target.value })}
+                      placeholder={t.matchLeftPh}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                    />
+                    <ArrowRight size={14} color={COLORS.chalkDim} />
+                    <input
+                      value={p.right}
+                      onChange={(e) => updatePair(q.id, p.id, { right: e.target.value })}
+                      placeholder={t.matchRightPh}
+                      style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "7px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14 }}
+                    />
+                    {q.pairs.length > 2 && (
+                      <button type="button" onClick={() => removePair(q.id, p.id)} style={iconBtnStyle}>
+                        <X size={14} color={COLORS.chalkDim} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" onClick={() => addPair(q.id)} style={{ alignSelf: "flex-start", background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontSize: 12.5, fontFamily: "Cairo, sans-serif", padding: "4px 0" }}>
+                  + {t.addPair}
+                </button>
+              </div>
+            )}
           </div>
-        </div>
-      ))}
-      <ChalkButton type="button" variant="outline" color={COLORS.chalkBlue} onClick={addQuestion} style={{ alignSelf: "flex-start" }}>
-        <Plus size={15} /> {t.addQuestion}
-      </ChalkButton>
+        );
+      })}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {QUESTION_KINDS.map((k) => (
+          <ChalkButton key={k} type="button" variant="outline" color={COLORS.chalkBlue} onClick={() => addQuestion(k)}>
+            <Plus size={14} /> {questionKindLabel(t, k)}
+          </ChalkButton>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1223,11 +1552,12 @@ function UploadField({ t, icon, value, onChange, accept, placeholder }) {
   );
 }
 
-const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", questions: [], durationMinutes: "", visibleTo: null };
+const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", questions: [], durationMinutes: "", visibleTo: null, allowDownload: false };
 
 function LessonsTab({ t, lessons, setLessons, students, classes }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_LESSON_FORM);
+  const [previewId, setPreviewId] = useState(null);
 
   const add = (e) => {
     e.preventDefault();
@@ -1237,7 +1567,10 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
       return;
     }
     const base = { id: uid(), title: form.title, category: form.category.trim() || t.noCategory, desc: form.desc, type: form.type, visibleTo: form.visibleTo, createdAt: new Date().toISOString() };
-    if (form.type === "video" || form.type === "pdf") base.url = form.url;
+    if (DOWNLOADABLE_TYPES.includes(form.type)) {
+      base.url = form.url;
+      base.allowDownload = !!form.allowDownload;
+    }
     if (form.type === "text") base.content = form.content;
     if (form.type === "exam") {
       base.questions = form.questions;
@@ -1310,6 +1643,24 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
             <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept="application/pdf" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonPdfUrlPh} />
           </div>
         )}
+        {form.type === "ppt" && (
+          <div>
+            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonPptUrl}</span>
+            <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept=".ppt,.pptx" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonPptUrlPh} />
+          </div>
+        )}
+        {form.type === "word" && (
+          <div>
+            <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.lessonWordUrl}</span>
+            <UploadField t={t} icon={<FileText size={16} color={COLORS.chalkDim} />} accept=".doc,.docx" value={form.url} onChange={(url) => setForm({ ...form, url })} placeholder={t.lessonWordUrlPh} />
+          </div>
+        )}
+        {DOWNLOADABLE_TYPES.includes(form.type) && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "Cairo, sans-serif" }}>
+            <input type="checkbox" checked={!!form.allowDownload} onChange={(e) => setForm({ ...form, allowDownload: e.target.checked })} />
+            <span style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.allowDownloadLabel}</span>
+          </label>
+        )}
         {form.type === "text" && (
           <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
             <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.lessonContent}</span>
@@ -1360,10 +1711,25 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
                       <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
                       {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 13 }}>{l.desc}</div>}
                     </div>
-                    <button onClick={() => remove(l.id)} style={iconBtnStyle}>
-                      <Trash2 size={16} color={COLORS.chalkPink} />
-                    </button>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => setPreviewId(previewId === l.id ? null : l.id)} style={iconBtnStyle} title={t.tryIt}>
+                        {previewId === l.id ? <EyeOff size={16} color={COLORS.chalkBlue} /> : <Eye size={16} color={COLORS.chalkBlue} />}
+                      </button>
+                      <button onClick={() => remove(l.id)} style={iconBtnStyle}>
+                        <Trash2 size={16} color={COLORS.chalkPink} />
+                      </button>
+                    </div>
                   </div>
+                  {DOWNLOADABLE_TYPES.includes(l.type) && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "Cairo, sans-serif" }}>
+                      <input
+                        type="checkbox"
+                        checked={!!l.allowDownload}
+                        onChange={(e) => setLessons(lessons.map((x) => (x.id === l.id ? { ...x, allowDownload: e.target.checked } : x)))}
+                      />
+                      <span style={{ color: COLORS.chalkDim, fontSize: 13 }}>{t.allowDownloadLabel}</span>
+                    </label>
+                  )}
                   <LessonVisibilityPicker
                     t={t}
                     students={students}
@@ -1371,6 +1737,14 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
                     value={l.visibleTo}
                     onChange={(v) => setLessons(lessons.map((x) => (x.id === l.id ? { ...x, visibleTo: v } : x)))}
                   />
+                  {previewId === l.id && (
+                    <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
+                      <div style={{ color: COLORS.chalkYellow, fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>{t.tryItPreviewNote}</div>
+                      {l.type === "text" && <div style={{ color: COLORS.chalk, fontSize: 14, whiteSpace: "pre-wrap", lineHeight: 1.7 }}>{l.content}</div>}
+                      {l.type === "exam" && <ExamTaker t={t} lesson={l} entry={null} onStart={() => {}} onSubmit={() => {}} preview />}
+                      {DOWNLOADABLE_TYPES.includes(l.type) && <LessonEmbed lesson={l} />}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1442,7 +1816,7 @@ function ProgressTab({ t, lang, students, lessons, progress }) {
 
 /* ---------- student ---------- */
 
-function StudentLogin({ students, onFound, onTeacher, lang, setLang }) {
+function StudentLogin({ students, onFound, onTeacher, onRegister, lang, setLang }) {
   const t = T[lang];
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -1450,7 +1824,9 @@ function StudentLogin({ students, onFound, onTeacher, lang, setLang }) {
 
   const submit = (e) => {
     e.preventDefault();
-    const match = students.find((s) => s.username.toLowerCase() === username.trim().toLowerCase() && s.password === password);
+    const match = students.find(
+      (s) => s.status !== "pending" && s.username && s.username.toLowerCase() === username.trim().toLowerCase() && s.password === password
+    );
     if (!match) { setErr(t.wrongLogin); return; }
     setErr("");
     onFound(match);
@@ -1472,14 +1848,202 @@ function StudentLogin({ students, onFound, onTeacher, lang, setLang }) {
         <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }}>
           {t.login}
         </ChalkButton>
+        <button type="button" onClick={onRegister} style={{ background: "none", border: "none", color: COLORS.chalkBlue, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 13.5, textAlign: "center" }}>
+          {t.newStudentLink}
+        </button>
       </form>
     </Board>
   );
 }
 
-function ExamTaker({ t, lesson, entry, onStart, onSubmit }) {
+function StudentRegister({ classes, setStudents, students, back, lang, setLang }) {
+  const t = T[lang];
+  const [form, setForm] = useState({ name: "", familyName: "", phone: "", email: "", classId: "" });
+  const [sent, setSent] = useState(false);
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.familyName.trim() || !form.phone.trim() || !form.classId) return;
+    setStudents([
+      ...students,
+      {
+        id: uid(),
+        name: `${form.name.trim()} ${form.familyName.trim()}`.trim(),
+        familyName: form.familyName.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        classId: form.classId,
+        username: "",
+        password: "",
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      },
+    ]);
+    setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <Board lang={lang}>
+        <Title lang={lang} sub={t.registerSentSub}>{t.brand}</Title>
+        <div style={{ maxWidth: 340, margin: "0 auto", textAlign: "center" }}>
+          <CheckCircle2 size={40} color={COLORS.chalkBlue} style={{ marginBottom: 10 }} />
+          <ChalkButton type="button" color={COLORS.chalkYellow} onClick={back} style={{ justifyContent: "center", margin: "20px auto 0" }}>
+            {t.backToLogin}
+          </ChalkButton>
+        </div>
+      </Board>
+    );
+  }
+
+  return (
+    <Board lang={lang}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+        <button onClick={back} style={{ background: "none", border: "none", color: COLORS.chalkDim, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Cairo, sans-serif", fontSize: 13 }}>
+          <ArrowRight size={14} /> {t.backToLogin}
+        </button>
+        <LangToggle lang={lang} setLang={setLang} />
+      </div>
+      <Title lang={lang} sub={t.registerSubtitle}>{t.brand}</Title>
+      <form onSubmit={submit} style={{ maxWidth: 340, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
+        <ChalkInput label={t.studentName} icon={<User size={16} color={COLORS.chalkDim} />} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoFocus />
+        <ChalkInput label={t.familyName} value={form.familyName} onChange={(e) => setForm({ ...form, familyName: e.target.value })} />
+        <ChalkInput label={t.phone} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} dir="ltr" />
+        <ChalkInput label={t.emailOptional} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} dir="ltr" />
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
+          <span style={{ color: COLORS.chalkDim, fontSize: 14, fontWeight: 600 }}>{t.assignClass}</span>
+          <select
+            value={form.classId}
+            onChange={(e) => setForm({ ...form, classId: e.target.value })}
+            style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 15 }}
+          >
+            <option value="" style={{ color: "#000" }}>{t.chooseClassOpt}</option>
+            {(classes || []).map((c) => (
+              <option key={c.id} value={c.id} style={{ color: "#000" }}>{c.name}</option>
+            ))}
+          </select>
+        </label>
+        <ChalkButton type="submit" color={COLORS.chalkYellow} style={{ justifyContent: "center" }}>
+          {t.sendRegistration}
+        </ChalkButton>
+      </form>
+    </Board>
+  );
+}
+
+function FillBlankQuestion({ t, q, value, onChange }) {
+  const bankAll = useMemo(() => shuffle(q.blanks || []), [q.id]);
+  const placed = value || [];
+  const [picked, setPicked] = useState(null); // index inside bankAll currently selected
+  const usedIdx = new Set(); // indices of bankAll already placed (best-effort by value match order)
+  // نحسب مين لسه في الصندوق: بنشيل كلمة واحدة من bankAll مقابل كل كلمة اتحطت فعلاً
+  const remaining = [...bankAll];
+  placed.forEach((w) => {
+    const idx = remaining.indexOf(w);
+    if (idx !== -1) remaining.splice(idx, 1);
+  });
+
+  const parts = (q.text || "").split("___");
+  const place = (blankIndex) => {
+    if (picked == null) return;
+    const next = [...placed];
+    while (next.length <= blankIndex) next.push("");
+    next[blankIndex] = picked;
+    onChange(next);
+    setPicked(null);
+  };
+  const clearBlank = (blankIndex) => {
+    const next = [...placed];
+    next[blankIndex] = "";
+    onChange(next);
+  };
+
+  return (
+    <div>
+      <div style={{ color: COLORS.chalk, fontSize: 14, lineHeight: 2.2 }}>
+        {parts.map((part, i) => (
+          <span key={i}>
+            {part}
+            {i < parts.length - 1 && (
+              <button
+                type="button"
+                onClick={() => (placed[i] ? clearBlank(i) : place(i))}
+                style={{
+                  display: "inline-block",
+                  minWidth: 60,
+                  margin: "0 4px",
+                  padding: "3px 10px",
+                  borderRadius: 6,
+                  border: `1.5px solid ${COLORS.chalkYellow}`,
+                  background: placed[i] ? "rgba(232,180,75,0.15)" : "transparent",
+                  color: COLORS.chalkYellow,
+                  fontFamily: "Cairo, sans-serif",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {placed[i] || "____"}
+              </button>
+            )}
+          </span>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
+        {remaining.map((w, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setPicked(w)}
+            style={{
+              padding: "5px 12px",
+              borderRadius: 16,
+              border: `1.5px solid ${picked === w ? COLORS.chalkBlue : "rgba(201,162,39,0.35)"}`,
+              background: picked === w ? "rgba(79,209,197,0.15)" : "transparent",
+              color: picked === w ? COLORS.chalkBlue : COLORS.chalk,
+              fontFamily: "Cairo, sans-serif",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            {w}
+          </button>
+        ))}
+      </div>
+      <div style={{ color: COLORS.chalkDim, fontSize: 11.5, marginTop: 4 }}>{t.fillBlankHint}</div>
+    </div>
+  );
+}
+
+function MatchingQuestion({ t, q, value, onChange }) {
+  const rightOptions = useMemo(() => shuffle((q.pairs || []).map((p) => p.right)), [q.id]);
+  const map = value || {};
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {(q.pairs || []).map((p) => (
+        <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ flex: 1, color: COLORS.chalk, fontSize: 13.5 }}>{p.left}</div>
+          <ArrowRight size={14} color={COLORS.chalkDim} />
+          <select
+            value={map[p.id] || ""}
+            onChange={(e) => onChange({ ...map, [p.id]: e.target.value })}
+            style={{ flex: 1, background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 6, padding: "6px 8px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 13.5 }}
+          >
+            <option value="" style={{ color: "#000" }}>{t.matchPick}</option>
+            {rightOptions.map((r, i) => (
+              <option key={i} value={r} style={{ color: "#000" }}>{r}</option>
+            ))}
+          </select>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ExamTaker({ t, lesson, entry, onStart, onSubmit, preview }) {
   const questions = lesson.questions || [];
   const [answers, setAnswers] = useState(entry?.examAnswers || {});
+  const answersRef = useRef(answers);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
   const [startedAt] = useState(() => entry?.examStartedAt || new Date().toISOString());
   const [remaining, setRemaining] = useState(null);
   const submittedRef = useRef(false);
@@ -1494,9 +2058,47 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit }) {
     if (submittedRef.current) return;
     submittedRef.current = true;
     let correct = 0;
-    questions.forEach((q) => { if (finalAnswers[q.id] && finalAnswers[q.id] === q.correctOptionId) correct++; });
-    onSubmit(finalAnswers, { correct, total: questions.length });
+    let total = 0;
+    let essayCount = 0;
+    questions.forEach((q) => {
+      const kind = q.kind || "mcq";
+      const ans = finalAnswers[q.id];
+      if (kind === "essay") {
+        essayCount++;
+        return;
+      }
+      total++;
+      if (kind === "mcq") {
+        if (ans && ans === q.correctOptionId) correct++;
+      } else if (kind === "truefalse") {
+        if (ans === q.correctAnswer) correct++;
+      } else if (kind === "fillblank") {
+        const blanks = q.blanks || [];
+        const arr = ans || [];
+        if (blanks.length > 0 && blanks.every((b, i) => (arr[i] || "").trim().toLowerCase() === (b || "").trim().toLowerCase())) correct++;
+      } else if (kind === "matching") {
+        const pairs = q.pairs || [];
+        const m = ans || {};
+        if (pairs.length > 0 && pairs.every((p) => m[p.id] === p.right)) correct++;
+      }
+    });
+    onSubmit(finalAnswers, { correct, total, essayCount });
   };
+
+  // قفل تلقائي: لو الطالب غيّر التبويب أو الشاشة أثناء الامتحان، يتسلّم على طول
+  useEffect(() => {
+    if (preview || entry?.examScore) return;
+    const onVisibility = () => {
+      if (document.hidden) doSubmit(answersRef.current);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("blur", onVisibility);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("blur", onVisibility);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry?.examScore]);
 
   useEffect(() => {
     if (!durationMs || entry?.examScore) return;
@@ -1504,7 +2106,7 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit }) {
       const elapsed = Date.now() - new Date(startedAt).getTime();
       const left = Math.max(0, Math.round((durationMs - elapsed) / 1000));
       setRemaining(left);
-      if (left <= 0) doSubmit(answers);
+      if (left <= 0) doSubmit(answersRef.current);
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -1517,6 +2119,7 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5 }}>{t.examAlreadySubmitted}</div>
         <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 15 }}>{t.examYourScore(entry.examScore.correct, entry.examScore.total)}</div>
+        {entry.examScore.essayCount > 0 && <div style={{ color: COLORS.chalkDim, fontSize: 12.5 }}>{t.examEssayNote(entry.examScore.essayCount)}</div>}
       </div>
     );
   }
@@ -1532,26 +2135,60 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {durationMs != null && remaining != null && (
+      {!preview && durationMs != null && remaining != null && (
         <div style={{ color: remaining < 60 ? COLORS.chalkPink : COLORS.chalkDim, fontSize: 13, fontWeight: 700 }}>
           {t.examTimeLeft(`${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`)}
         </div>
       )}
-      {questions.map((q, qi) => (
-        <div key={q.id} style={{ border: `1px solid rgba(201,162,39,0.25)`, borderRadius: 8, padding: 10 }}>
-          <div style={{ color: COLORS.chalk, fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
-            {qi + 1}. {q.text}
+      {!preview && <div style={{ color: COLORS.chalkDim, fontSize: 11.5 }}>{t.examAntiCheatNote}</div>}
+      {questions.map((q, qi) => {
+        const kind = q.kind || "mcq";
+        return (
+          <div key={q.id} style={{ border: `1px solid rgba(201,162,39,0.25)`, borderRadius: 8, padding: 10 }}>
+            {kind !== "fillblank" && (
+              <div style={{ color: COLORS.chalk, fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
+                {qi + 1}. {q.text}
+              </div>
+            )}
+            {kind === "mcq" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {q.options.map((o) => (
+                  <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: COLORS.chalkDim, cursor: "pointer" }}>
+                    <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === o.id} onChange={() => setAnswers({ ...answers, [q.id]: o.id })} />
+                    {o.text}
+                  </label>
+                ))}
+              </div>
+            )}
+            {kind === "truefalse" && (
+              <div style={{ display: "flex", gap: 16 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalkDim, fontSize: 13.5, cursor: "pointer" }}>
+                  <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === true} onChange={() => setAnswers({ ...answers, [q.id]: true })} /> {t.trueLabel}
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, color: COLORS.chalkDim, fontSize: 13.5, cursor: "pointer" }}>
+                  <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === false} onChange={() => setAnswers({ ...answers, [q.id]: false })} /> {t.falseLabel}
+                </label>
+              </div>
+            )}
+            {kind === "essay" && (
+              <textarea
+                value={answers[q.id] || ""}
+                onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
+                rows={4}
+                placeholder={t.essayAnswerPh}
+                style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 6, padding: "8px 10px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 14, resize: "vertical" }}
+              />
+            )}
+            {kind === "fillblank" && (
+              <>
+                <div style={{ color: COLORS.chalkBlue, fontSize: 12, fontWeight: 700, marginBottom: 6 }}>{qi + 1}.</div>
+                <FillBlankQuestion t={t} q={q} value={answers[q.id]} onChange={(v) => setAnswers({ ...answers, [q.id]: v })} />
+              </>
+            )}
+            {kind === "matching" && <MatchingQuestion t={t} q={q} value={answers[q.id]} onChange={(v) => setAnswers({ ...answers, [q.id]: v })} />}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {q.options.map((o) => (
-              <label key={o.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, color: COLORS.chalkDim, cursor: "pointer" }}>
-                <input type="radio" name={`ans-${q.id}`} checked={answers[q.id] === o.id} onChange={() => setAnswers({ ...answers, [q.id]: o.id })} />
-                {o.text}
-              </label>
-            ))}
-          </div>
-        </div>
-      ))}
+        );
+      })}
       <ChalkButton type="button" color={COLORS.chalkYellow} onClick={handleSubmitClick}>
         {t.submitExam}
       </ChalkButton>
@@ -1677,26 +2314,15 @@ function StudentDashboard({ back, student, lessons, progress, setProgress, lang,
                           {type === "pdf" ? t.openPdf : t.openLesson} <ExternalLink size={14} />
                         </a>
                       )}
+                      {l.url && embed && l.allowDownload && (
+                        <a href={l.url} download target="_blank" rel="noreferrer" style={{ color: COLORS.chalkBlue, display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>
+                          {t.downloadFile} <Upload size={13} style={{ transform: "rotate(180deg)" }} />
+                        </a>
+                      )}
                     </div>
-                    {embed && embed.type === "file-video" && (
-                      <video
-                        src={embed.src}
-                        controls
-                        controlsList="nodownload noremoteplayback"
-                        disablePictureInPicture
-                        onContextMenu={(e) => e.preventDefault()}
-                        style={{ width: "100%", maxWidth: 480, borderRadius: 8, marginRight: 34, background: "#000" }}
-                      />
-                    )}
-                    {embed && embed.type !== "file-video" && (
-                      <iframe
-                        src={embed.src}
-                        title={l.title}
-                        allow="autoplay; encrypted-media; fullscreen"
-                        allowFullScreen
-                        style={{ width: "100%", maxWidth: 480, aspectRatio: type === "pdf" ? "3/4" : "16/9", border: "none", borderRadius: 8, marginRight: 34 }}
-                      />
-                    )}
+                    <div style={{ marginRight: 34 }}>
+                      <LessonEmbed lesson={l} />
+                    </div>
                   </div>
                 );
               })}
@@ -1826,7 +2452,20 @@ export default function App() {
         lang={lang}
         setLang={setLang}
         onTeacher={() => setScreen("adminLogin")}
+        onRegister={() => setScreen("studentRegister")}
         onFound={(s) => { setCurrentStudent(s); setScreen("studentDashboard"); }}
+      />
+    );
+
+  if (screen === "studentRegister")
+    return (
+      <StudentRegister
+        classes={classes}
+        students={students}
+        setStudents={setStudents}
+        back={() => setScreen("studentLogin")}
+        lang={lang}
+        setLang={setLang}
       />
     );
 
