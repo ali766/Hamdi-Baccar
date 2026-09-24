@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2, Eye, EyeOff } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2, Eye, EyeOff, Pencil, Ban, Unlock } from "lucide-react";
 import { uploadToCloudinary } from "./cloudinary";
 import {
   subscribeToStudents,
@@ -152,6 +152,10 @@ const T = {
     addClass: "إضافة فصل",
     noClasses: "لسه مفيش فصول. ضيف فصل من الفورم فوق.",
     studentsInClass: (n) => `${n} طالب`,
+    classStudentsTitle: "الطلاب في الفصل",
+    classLessonsTitle: "الدروس المضافة للفصل",
+    classExamsTitle: "الامتحانات المضافة للفصل",
+    noneAddedYet: "لسه مفيش حاجة مضافة.",
     assignClass: "الفصل",
     noClassOpt: "بدون فصل",
     deleteClassConfirm: "هتمسح الفصل ده؟ الطلاب فيه هيبقوا بدون فصل.",
@@ -172,6 +176,13 @@ const T = {
     noStudents: "لسه مفيش طلاب. ضيف أول طالب من الفورم فوق.",
     copyCreds: "انسخ بيانات الدخول",
     copied: "اتنسخت!",
+    editStudent: "تعديل بيانات الطالب",
+    saveChanges: "حفظ التعديلات",
+    blockStudent: "حظر الطالب",
+    unblockStudent: "إلغاء الحظر",
+    blockedLabel: "محظور",
+    blockConfirm: "متأكد عايز تحظر الطالب ده؟ مش هيقدر يدخل تاني لحد ما تلغي الحظر.",
+    editLesson: "تعديل",
     lessonTitle: "عنوان الدرس",
     lessonTitlePh: "مثال: الوحدة الأولى - المعادلات",
     category: "القسم / الوحدة",
@@ -325,6 +336,10 @@ const T = {
     addClass: "Add class",
     noClasses: "No classes yet. Add one using the form above.",
     studentsInClass: (n) => `${n} student(s)`,
+    classStudentsTitle: "Students in this class",
+    classLessonsTitle: "Lessons assigned to this class",
+    classExamsTitle: "Exams assigned to this class",
+    noneAddedYet: "Nothing added yet.",
     assignClass: "Class",
     noClassOpt: "No class",
     deleteClassConfirm: "Delete this class? Its students will become unassigned.",
@@ -345,6 +360,13 @@ const T = {
     noStudents: "No students yet. Add the first one using the form above.",
     copyCreds: "Copy login details",
     copied: "Copied!",
+    editStudent: "Edit student",
+    saveChanges: "Save changes",
+    blockStudent: "Block student",
+    unblockStudent: "Unblock",
+    blockedLabel: "Blocked",
+    blockConfirm: "Sure you want to block this student? They won't be able to log in until you unblock them.",
+    editLesson: "Edit",
     lessonTitle: "Lesson title",
     lessonTitlePh: "e.g. Unit 1 - Equations",
     category: "Category / Unit",
@@ -498,6 +520,10 @@ const T = {
     addClass: "Ajouter une classe",
     noClasses: "Aucune classe pour l'instant. Ajoutez-en une ci-dessus.",
     studentsInClass: (n) => `${n} élève(s)`,
+    classStudentsTitle: "Élèves de cette classe",
+    classLessonsTitle: "Cours assignés à cette classe",
+    classExamsTitle: "Examens assignés à cette classe",
+    noneAddedYet: "Rien d'ajouté pour l'instant.",
     assignClass: "Classe",
     noClassOpt: "Aucune classe",
     deleteClassConfirm: "Supprimer cette classe ? Ses élèves n'auront plus de classe.",
@@ -518,6 +544,13 @@ const T = {
     noStudents: "Aucun élève pour l'instant. Ajoutez-en un ci-dessus.",
     copyCreds: "Copier les identifiants",
     copied: "Copié !",
+    editStudent: "Modifier l'élève",
+    saveChanges: "Enregistrer les modifications",
+    blockStudent: "Bloquer l'élève",
+    unblockStudent: "Débloquer",
+    blockedLabel: "Bloqué",
+    blockConfirm: "Bloquer cet élève ? Il ne pourra plus se connecter tant que vous ne le débloquez pas.",
+    editLesson: "Modifier",
     lessonTitle: "Titre du cours",
     lessonTitlePh: "ex : Unité 1 - Équations",
     category: "Catégorie / Unité",
@@ -857,6 +890,10 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
   const t = T[lang];
   const [tab, setTab] = useState("dashboard");
   const [navOpen, setNavOpen] = useState(false);
+  const [pendingEditLessonId, setPendingEditLessonId] = useState(null);
+  const [pendingEditExamId, setPendingEditExamId] = useState(null);
+  const openLessonEditor = (id) => { setTab("lessons"); setPendingEditLessonId(id); };
+  const openExamEditor = (id) => { setTab("exams"); setPendingEditExamId(id); };
   const tabs = [
     { id: "dashboard", label: t.tabDashboard, icon: <LayoutDashboard size={16} /> },
     { id: "classes", label: t.tabClasses, icon: <GraduationCap size={16} /> },
@@ -936,10 +973,10 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
         <nav className="admin-sidebar">{renderNavButtons()}</nav>
         <div className="admin-content">
           {tab === "dashboard" && <DashboardTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} goTo={setTab} />}
-          {tab === "classes" && <ClassesTab t={t} classes={classes} setClasses={setClasses} students={students} />}
+          {tab === "classes" && <ClassesTab t={t} classes={classes} setClasses={setClasses} students={students} lessons={lessons} onOpenLesson={openLessonEditor} onOpenExam={openExamEditor} />}
           {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} classes={classes} />}
-          {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} />}
-          {tab === "exams" && <ExamsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} />}
+          {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} externalEditId={pendingEditLessonId} onExternalEditHandled={() => setPendingEditLessonId(null)} />}
+          {tab === "exams" && <ExamsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} externalEditId={pendingEditExamId} onExternalEditHandled={() => setPendingEditExamId(null)} />}
           {tab === "progress" && <ProgressTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} />}
           {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
         </div>
@@ -1062,8 +1099,9 @@ function SettingsTab({ t, adminPass, setAdminPass }) {
   );
 }
 
-function ClassesTab({ t, classes, setClasses, students }) {
+function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, onOpenExam }) {
   const [name, setName] = useState("");
+  const [openId, setOpenId] = useState(null);
 
   const add = (e) => {
     e.preventDefault();
@@ -1092,17 +1130,89 @@ function ClassesTab({ t, classes, setClasses, students }) {
         <EmptyNote text={t.noClasses} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {classes.map((c) => (
-            <div key={c.id} style={rowStyle}>
-              <div>
-                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{c.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.studentsInClass(countFor(c.id))}</div>
+          {classes.map((c) => {
+            const isOpen = openId === c.id;
+            const classStudents = students.filter((s) => s.classId === c.id && s.status !== "pending");
+            const classLessons = (lessons || []).filter((l) => l.type !== "exam" && lessonAssignedToClass(l, c.id));
+            const classExams = (lessons || []).filter((l) => l.type === "exam" && lessonAssignedToClass(l, c.id));
+            return (
+              <div key={c.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setOpenId(isOpen ? null : c.id)}>
+                  <div>
+                    <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{c.name}</div>
+                    <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.studentsInClass(countFor(c.id))}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} style={iconBtnStyle}>
+                      <Trash2 size={16} color={COLORS.chalkPink} />
+                    </button>
+                  </div>
+                </div>
+                {isOpen && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14, borderTop: `1px dashed rgba(201,162,39,0.3)`, paddingTop: 12 }}>
+                    <div>
+                      <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                        <Users size={13} /> {t.classStudentsTitle}
+                      </div>
+                      {classStudents.length === 0 ? (
+                        <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {classStudents.map((s) => (
+                            <div key={s.id} style={{ color: COLORS.chalk, fontSize: 14 }}>
+                              {s.name} {s.status === "blocked" && <span style={{ color: COLORS.chalkPink, fontSize: 12 }}>· {t.blockedLabel}</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                        <BookOpen size={13} /> {t.classLessonsTitle}
+                      </div>
+                      {classLessons.length === 0 ? (
+                        <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {classLessons.map((l) => (
+                            <button
+                              key={l.id}
+                              onClick={() => onOpenLesson && onOpenLesson(l.id)}
+                              style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: COLORS.chalkYellow, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 14, padding: "2px 0", textAlign: "start" }}
+                            >
+                              {lessonTypeIcon(l.type, 13)} {l.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                        <ListChecks size={13} /> {t.classExamsTitle}
+                      </div>
+                      {classExams.length === 0 ? (
+                        <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                          {classExams.map((l) => (
+                            <button
+                              key={l.id}
+                              onClick={() => onOpenExam && onOpenExam(l.id)}
+                              style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: COLORS.chalkYellow, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 14, padding: "2px 0", textAlign: "start" }}
+                            >
+                              {lessonTypeIcon("exam", 13)} {l.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              <button onClick={() => remove(c.id)} style={iconBtnStyle}>
-                <Trash2 size={16} color={COLORS.chalkPink} />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -1154,6 +1264,117 @@ function PendingStudentRow({ t, s, classNameFor, onApprove, onReject }) {
   );
 }
 
+function ApprovedStudentRow({ t, s, classes, classNameFor, onSave, onSetClass, onToggleBlock, onRemove, onCopy, copied }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(s.name);
+  const [username, setUsername] = useState(s.username);
+  const [password, setPassword] = useState(s.password);
+  const [phone, setPhone] = useState(s.phone || "");
+  const [email, setEmail] = useState(s.email || "");
+  const blocked = s.status === "blocked";
+
+  const startEdit = () => {
+    setName(s.name);
+    setUsername(s.username);
+    setPassword(s.password);
+    setPhone(s.phone || "");
+    setEmail(s.email || "");
+    setEditing(true);
+  };
+
+  const save = () => {
+    if (!name.trim() || !username.trim() || !password.trim()) return;
+    onSave(s.id, { name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), phone: phone.trim(), email: email.trim() });
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <ChalkInput label={t.studentName} value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <ChalkInput label={t.chooseUsername} value={username} onChange={(e) => setUsername(e.target.value)} dir="ltr" />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <ChalkInput label={t.phone} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <ChalkInput label={t.emailOptional} value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <ChalkButton type="button" color={COLORS.chalkYellow} onClick={save}>
+            <CheckCircle2 size={16} /> {t.saveChanges}
+          </ChalkButton>
+          <ChalkButton type="button" variant="outline" color={COLORS.chalkDim} onClick={() => setEditing(false)}>
+            <X size={15} /> {t.back}
+          </ChalkButton>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...rowStyle, flexWrap: "wrap", gap: 10, opacity: blocked ? 0.6 : 1 }}>
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{s.name}</div>
+          {blocked && (
+            <span style={{ border: `1px solid ${COLORS.chalkPink}`, color: COLORS.chalkPink, borderRadius: 20, padding: "1px 10px", fontSize: 12, fontWeight: 700 }}>
+              {t.blockedLabel}
+            </span>
+          )}
+        </div>
+        <div style={{ color: COLORS.chalkDim, fontSize: 15, direction: "ltr", textAlign: "right" }}>
+          {s.username} · {s.password}
+        </div>
+        {(s.phone || s.email) && (
+          <div style={{ color: COLORS.chalkDim, fontSize: 13.5, marginTop: 2, direction: "ltr", textAlign: "right" }}>
+            {s.phone} {s.phone && s.email && "·"} {s.email}
+          </div>
+        )}
+        {classNameFor(s.classId) && (
+          <div style={{ color: COLORS.chalkBlue, fontSize: 13.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+            <GraduationCap size={12} /> {classNameFor(s.classId)}
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <select
+          value={s.classId || ""}
+          onChange={(e) => onSetClass(s.id, e.target.value)}
+          style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 8, padding: "6px 8px", color: COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontSize: 13.5 }}
+        >
+          <option value="" style={{ color: "#000" }}>{t.noClassOpt}</option>
+          {(classes || []).map((c) => (
+            <option key={c.id} value={c.id} style={{ color: "#000" }}>{c.name}</option>
+          ))}
+        </select>
+        <button onClick={() => onCopy(s)} style={iconBtnStyle} title={t.copyCreds}>
+          {copied ? <Check size={16} color={COLORS.chalkBlue} /> : <Copy size={16} color={COLORS.chalkDim} />}
+        </button>
+        <button onClick={startEdit} style={iconBtnStyle} title={t.editStudent}>
+          <Pencil size={16} color={COLORS.chalkBlue} />
+        </button>
+        <button onClick={() => onToggleBlock(s.id)} style={iconBtnStyle} title={blocked ? t.unblockStudent : t.blockStudent}>
+          {blocked ? <Unlock size={16} color={COLORS.chalkBlue} /> : <Ban size={16} color={COLORS.chalkPink} />}
+        </button>
+        <button onClick={() => onRemove(s.id)} style={iconBtnStyle}>
+          <Trash2 size={16} color={COLORS.chalkPink} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function StudentsTab({ t, students, setStudents, classes }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -1181,6 +1402,14 @@ function StudentsTab({ t, students, setStudents, classes }) {
   const approvePending = (id, uname, pass) =>
     setStudents(students.map((s) => (s.id === id ? { ...s, username: uname, password: pass, status: "approved" } : s)));
   const setStudentClass = (id, cid) => setStudents(students.map((s) => (s.id === id ? { ...s, classId: cid || null } : s)));
+  const saveStudent = (id, patch) => setStudents(students.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  const toggleBlock = (id) => {
+    const s = students.find((x) => x.id === id);
+    if (!s) return;
+    const nowBlocked = s.status !== "blocked";
+    if (nowBlocked && !window.confirm(t.blockConfirm)) return;
+    setStudents(students.map((x) => (x.id === id ? { ...x, status: nowBlocked ? "blocked" : "approved" } : x)));
+  };
   const classNameFor = (cid) => (classes || []).find((c) => c.id === cid)?.name || null;
 
   const copyCreds = (s) => {
@@ -1247,42 +1476,19 @@ function StudentsTab({ t, students, setStudents, classes }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {approved.map((s) => (
-            <div key={s.id} style={{ ...rowStyle, flexWrap: "wrap", gap: 10 }}>
-              <div>
-                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{s.name}</div>
-                <div style={{ color: COLORS.chalkDim, fontSize: 15, direction: "ltr", textAlign: "right" }}>
-                  {s.username} · {s.password}
-                </div>
-                {(s.phone || s.email) && (
-                  <div style={{ color: COLORS.chalkDim, fontSize: 13.5, marginTop: 2, direction: "ltr", textAlign: "right" }}>
-                    {s.phone} {s.phone && s.email && "·"} {s.email}
-                  </div>
-                )}
-                {classNameFor(s.classId) && (
-                  <div style={{ color: COLORS.chalkBlue, fontSize: 13.5, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
-                    <GraduationCap size={12} /> {classNameFor(s.classId)}
-                  </div>
-                )}
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <select
-                  value={s.classId || ""}
-                  onChange={(e) => setStudentClass(s.id, e.target.value)}
-                  style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 8, padding: "6px 8px", color: COLORS.chalkDim, fontFamily: "Cairo, sans-serif", fontSize: 13.5 }}
-                >
-                  <option value="" style={{ color: "#000" }}>{t.noClassOpt}</option>
-                  {(classes || []).map((c) => (
-                    <option key={c.id} value={c.id} style={{ color: "#000" }}>{c.name}</option>
-                  ))}
-                </select>
-                <button onClick={() => copyCreds(s)} style={iconBtnStyle} title={t.copyCreds}>
-                  {copiedId === s.id ? <Check size={16} color={COLORS.chalkBlue} /> : <Copy size={16} color={COLORS.chalkDim} />}
-                </button>
-                <button onClick={() => remove(s.id)} style={iconBtnStyle}>
-                  <Trash2 size={16} color={COLORS.chalkPink} />
-                </button>
-              </div>
-            </div>
+            <ApprovedStudentRow
+              key={s.id}
+              t={t}
+              s={s}
+              classes={classes}
+              classNameFor={classNameFor}
+              onSave={saveStudent}
+              onSetClass={setStudentClass}
+              onToggleBlock={toggleBlock}
+              onRemove={remove}
+              onCopy={copyCreds}
+              copied={copiedId === s.id}
+            />
           ))}
         </div>
       )}
@@ -1629,25 +1835,55 @@ function UploadField({ t, icon, value, onChange, accept, placeholder }) {
 
 const EMPTY_LESSON_FORM = { title: "", category: "", desc: "", url: "", content: "", type: "video", visibleTo: null, allowDownload: false };
 
-function LessonsTab({ t, lessons, setLessons, students, classes }) {
+function LessonsTab({ t, lessons, setLessons, students, classes, externalEditId, onExternalEditHandled }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_LESSON_FORM);
   const [previewId, setPreviewId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   const myLessons = useMemo(() => lessons.filter((l) => l.type !== "exam"), [lessons]);
 
-  const add = (e) => {
+  const closeForm = () => { setShowForm(false); setForm(EMPTY_LESSON_FORM); setEditingId(null); };
+
+  const startEdit = (l) => {
+    setForm({
+      title: l.title || "",
+      category: l.category === t.noCategory ? "" : (l.category || ""),
+      desc: l.desc || "",
+      url: l.url || "",
+      content: l.content || "",
+      type: l.type || "video",
+      visibleTo: l.visibleTo || null,
+      allowDownload: !!l.allowDownload,
+    });
+    setEditingId(l.id);
+    setPreviewId(null);
+    setShowForm(true);
+  };
+
+  useEffect(() => {
+    if (!externalEditId) return;
+    const l = lessons.find((x) => x.id === externalEditId);
+    if (l) startEdit(l);
+    onExternalEditHandled && onExternalEditHandled();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalEditId]);
+
+  const submit = (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-    const base = { id: uid(), title: form.title, category: form.category.trim() || t.noCategory, desc: form.desc, type: form.type, visibleTo: form.visibleTo, createdAt: new Date().toISOString() };
+    const base = { title: form.title, category: form.category.trim() || t.noCategory, desc: form.desc, type: form.type, visibleTo: form.visibleTo };
     if (DOWNLOADABLE_TYPES.includes(form.type)) {
       base.url = form.url;
       base.allowDownload = !!form.allowDownload;
     }
     if (form.type === "text") base.content = form.content;
-    setLessons([...lessons, base]);
-    setForm(EMPTY_LESSON_FORM);
-    setShowForm(false);
+    if (editingId) {
+      setLessons(lessons.map((x) => (x.id === editingId ? { ...x, ...base } : x)));
+    } else {
+      setLessons([...lessons, { id: uid(), ...base, createdAt: new Date().toISOString() }]);
+    }
+    closeForm();
   };
   const remove = (id) => setLessons(lessons.filter((l) => l.id !== id));
 
@@ -1665,7 +1901,7 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
         </ChalkButton>
       )}
       {showForm && (
-      <form onSubmit={add} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
+      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {LESSON_TYPES.map((lt) => (
             <button
@@ -1746,9 +1982,9 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
         <LessonVisibilityPicker t={t} students={students} classes={classes} value={form.visibleTo} onChange={(v) => setForm({ ...form, visibleTo: v })} />
         <div style={{ display: "flex", gap: 10 }}>
           <ChalkButton type="submit" color={COLORS.chalkYellow}>
-            <Plus size={16} /> {t.addLesson}
+            {editingId ? <CheckCircle2 size={16} /> : <Plus size={16} />} {editingId ? t.saveChanges : t.addLesson}
           </ChalkButton>
-          <ChalkButton type="button" variant="outline" color={COLORS.chalkDim} onClick={() => { setShowForm(false); setForm(EMPTY_LESSON_FORM); }}>
+          <ChalkButton type="button" variant="outline" color={COLORS.chalkDim} onClick={closeForm}>
             <X size={15} /> {t.back}
           </ChalkButton>
         </div>
@@ -1775,6 +2011,9 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
                     <div style={{ display: "flex", gap: 6 }}>
                       <button onClick={() => setPreviewId(previewId === l.id ? null : l.id)} style={iconBtnStyle} title={t.tryIt}>
                         {previewId === l.id ? <EyeOff size={16} color={COLORS.chalkBlue} /> : <Eye size={16} color={COLORS.chalkBlue} />}
+                      </button>
+                      <button onClick={() => startEdit(l)} style={iconBtnStyle} title={t.editLesson}>
+                        <Pencil size={16} color={COLORS.chalkBlue} />
                       </button>
                       <button onClick={() => remove(l.id)} style={iconBtnStyle}>
                         <Trash2 size={16} color={COLORS.chalkPink} />
@@ -1817,14 +2056,42 @@ function LessonsTab({ t, lessons, setLessons, students, classes }) {
 
 const EMPTY_EXAM_FORM = { title: "", category: "", desc: "", format: "builder", url: "", allowDownload: true, durationMinutes: "", questions: [], visibleTo: null };
 
-function ExamsTab({ t, lessons, setLessons, students, classes }) {
+function ExamsTab({ t, lessons, setLessons, students, classes, externalEditId, onExternalEditHandled }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_EXAM_FORM);
   const [previewId, setPreviewId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   const myExams = useMemo(() => lessons.filter((l) => l.type === "exam"), [lessons]);
 
-  const add = (e) => {
+  const closeForm = () => { setShowForm(false); setForm(EMPTY_EXAM_FORM); setEditingId(null); };
+
+  const startEdit = (l) => {
+    setForm({
+      title: l.title || "",
+      category: l.category === t.noCategory ? "" : (l.category || ""),
+      desc: l.desc || "",
+      format: l.examFormat || "builder",
+      url: l.url || "",
+      allowDownload: l.allowDownload !== undefined ? !!l.allowDownload : true,
+      durationMinutes: l.durationMinutes != null ? String(l.durationMinutes) : "",
+      questions: l.questions || [],
+      visibleTo: l.visibleTo || null,
+    });
+    setEditingId(l.id);
+    setPreviewId(null);
+    setShowForm(true);
+  };
+
+  useEffect(() => {
+    if (!externalEditId) return;
+    const l = lessons.find((x) => x.id === externalEditId);
+    if (l) startEdit(l);
+    onExternalEditHandled && onExternalEditHandled();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalEditId]);
+
+  const submit = (e) => {
     e.preventDefault();
     if (!form.title.trim()) return;
     if (form.format === "builder" && form.questions.length === 0) {
@@ -1833,14 +2100,12 @@ function ExamsTab({ t, lessons, setLessons, students, classes }) {
     }
     if ((form.format === "pdf" || form.format === "word") && !form.url) return;
     const base = {
-      id: uid(),
       title: form.title,
       category: form.category.trim() || t.noCategory,
       desc: form.desc,
       type: "exam",
       examFormat: form.format,
       visibleTo: form.visibleTo,
-      createdAt: new Date().toISOString(),
     };
     if (form.format === "builder") {
       base.questions = form.questions;
@@ -1849,9 +2114,12 @@ function ExamsTab({ t, lessons, setLessons, students, classes }) {
       base.url = form.url;
       base.allowDownload = !!form.allowDownload;
     }
-    setLessons([...lessons, base]);
-    setForm(EMPTY_EXAM_FORM);
-    setShowForm(false);
+    if (editingId) {
+      setLessons(lessons.map((x) => (x.id === editingId ? { ...x, ...base } : x)));
+    } else {
+      setLessons([...lessons, { id: uid(), ...base, createdAt: new Date().toISOString() }]);
+    }
+    closeForm();
   };
   const remove = (id) => setLessons(lessons.filter((l) => l.id !== id));
 
@@ -1871,7 +2139,7 @@ function ExamsTab({ t, lessons, setLessons, students, classes }) {
         </ChalkButton>
       )}
       {showForm && (
-      <form onSubmit={add} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
+      <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 10, padding: 16 }}>
         <div>
           <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600, display: "block", marginBottom: 6 }}>{t.examFormatLabel}</span>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -1933,9 +2201,9 @@ function ExamsTab({ t, lessons, setLessons, students, classes }) {
         <LessonVisibilityPicker t={t} students={students} classes={classes} value={form.visibleTo} onChange={(v) => setForm({ ...form, visibleTo: v })} />
         <div style={{ display: "flex", gap: 10 }}>
           <ChalkButton type="submit" color={COLORS.chalkYellow}>
-            <Plus size={16} /> {t.addExam}
+            {editingId ? <CheckCircle2 size={16} /> : <Plus size={16} />} {editingId ? t.saveChanges : t.addExam}
           </ChalkButton>
-          <ChalkButton type="button" variant="outline" color={COLORS.chalkDim} onClick={() => { setShowForm(false); setForm(EMPTY_EXAM_FORM); }}>
+          <ChalkButton type="button" variant="outline" color={COLORS.chalkDim} onClick={closeForm}>
             <X size={15} /> {t.back}
           </ChalkButton>
         </div>
@@ -1963,6 +2231,9 @@ function ExamsTab({ t, lessons, setLessons, students, classes }) {
                     <div style={{ display: "flex", gap: 6 }}>
                       <button onClick={() => setPreviewId(previewId === l.id ? null : l.id)} style={iconBtnStyle} title={t.tryIt}>
                         {previewId === l.id ? <EyeOff size={16} color={COLORS.chalkBlue} /> : <Eye size={16} color={COLORS.chalkBlue} />}
+                      </button>
+                      <button onClick={() => startEdit(l)} style={iconBtnStyle} title={t.editLesson}>
+                        <Pencil size={16} color={COLORS.chalkBlue} />
                       </button>
                       <button onClick={() => remove(l.id)} style={iconBtnStyle}>
                         <Trash2 size={16} color={COLORS.chalkPink} />
@@ -2011,6 +2282,18 @@ function lessonVisibleToStudent(lesson, student) {
   if (student.classId && classIds.includes(student.classId)) return true;
   if (studentIds.includes(student.id)) return true;
   return false;
+}
+
+// Whether a lesson/exam is assigned to a class: visible to all (no restriction), or its
+// visibility explicitly lists this class. Used by the teacher's Classes tab to show what's
+// assigned to a given class, regardless of which individual students are in it.
+function lessonAssignedToClass(lesson, classId) {
+  const v = lesson.visibleTo;
+  if (!v) return true;
+  const classIds = v.classIds || [];
+  const studentIds = v.studentIds || [];
+  if (classIds.length === 0 && studentIds.length === 0) return true;
+  return classIds.includes(classId);
 }
 
 function studentStats(studentId, lessons, progress) {
@@ -2072,7 +2355,7 @@ function StudentLogin({ students, onFound, onTeacher, onRegister, lang, setLang 
   const submit = (e) => {
     e.preventDefault();
     const match = students.find(
-      (s) => s.status !== "pending" && s.username && s.username.toLowerCase() === username.trim().toLowerCase() && s.password === password
+      (s) => s.status !== "pending" && s.status !== "blocked" && s.username && s.username.toLowerCase() === username.trim().toLowerCase() && s.password === password
     );
     if (!match) { setErr(t.wrongLogin); return; }
     setErr("");
