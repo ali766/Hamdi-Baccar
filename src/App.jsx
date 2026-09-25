@@ -103,6 +103,23 @@ function genPassword() {
   for (let i = 0; i < 6; i++) out += chars[Math.floor(Math.random() * chars.length)];
   return out;
 }
+function genUsername(name, existing) {
+  const base =
+    (name || "student")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "")
+      .slice(0, 10) || "student";
+  const taken = new Set((existing || []).map((s) => (s.username || "").toLowerCase()));
+  let candidate = base;
+  let n = 0;
+  while (!candidate || taken.has(candidate)) {
+    n += 1;
+    candidate = `${base}${Math.floor(100 + Math.random() * 900)}${n > 1 ? n : ""}`;
+  }
+  return candidate;
+}
 
 /* ---------- translations ---------- */
 
@@ -1249,13 +1266,15 @@ function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, o
                 </div>
                 {isOpen && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 14, borderTop: `1px dashed rgba(201,162,39,0.3)`, paddingTop: 12 }}>
-                    <div>
-                      <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                        <Users size={13} /> {t.classStudentsTitle}
-                      </div>
-                      {classStudents.length === 0 ? (
-                        <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
-                      ) : (
+                    {classStudents.length === 0 && classLessons.length === 0 && classExams.length === 0 && (
+                      <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
+                    )}
+
+                    {classStudents.length > 0 && (
+                      <div>
+                        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                          <Users size={13} /> {t.classStudentsTitle}
+                        </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {classStudents.map((s) => (
                             <div key={s.id} style={{ color: COLORS.chalk, fontSize: 14 }}>
@@ -1263,16 +1282,14 @@ function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, o
                             </div>
                           ))}
                         </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                        <BookOpen size={13} /> {t.classLessonsTitle}
                       </div>
-                      {classLessons.length === 0 ? (
-                        <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
-                      ) : (
+                    )}
+
+                    {classLessons.length > 0 && (
+                      <div>
+                        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                          <BookOpen size={13} /> {t.classLessonsTitle}
+                        </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {classLessons.map((l) => (
                             <button
@@ -1284,16 +1301,14 @@ function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, o
                             </button>
                           ))}
                         </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                        <ListChecks size={13} /> {t.classExamsTitle}
                       </div>
-                      {classExams.length === 0 ? (
-                        <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
-                      ) : (
+                    )}
+
+                    {classExams.length > 0 && (
+                      <div>
+                        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                          <ListChecks size={13} /> {t.classExamsTitle}
+                        </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {classExams.map((l) => (
                             <button
@@ -1305,8 +1320,8 @@ function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, o
                             </button>
                           ))}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1476,11 +1491,6 @@ function ApprovedStudentRow({ t, s, classes, classNameFor, onSave, onSetClass, o
 
 function StudentsTab({ t, students, setStudents, classes }) {
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [classId, setClassId] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
   const [copiedId, setCopiedId] = useState(null);
 
   const pending = students.filter((s) => s.status === "pending");
@@ -1488,14 +1498,11 @@ function StudentsTab({ t, students, setStudents, classes }) {
 
   const add = (e) => {
     e.preventDefault();
-    if (!name.trim() || !username.trim() || !password.trim()) return;
-    setStudents([...students, { id: uid(), name: name.trim(), username: username.trim().toLowerCase(), password: password.trim(), phone: phone.trim(), email: email.trim(), classId: classId || null, status: "approved", createdAt: new Date().toISOString() }]);
+    if (!name.trim()) return;
+    const username = genUsername(name.trim(), students);
+    const password = genPassword();
+    setStudents([...students, { id: uid(), name: name.trim(), username, password, phone: "", email: "", classId: null, status: "approved", createdAt: new Date().toISOString() }]);
     setName("");
-    setUsername("");
-    setPassword("");
-    setClassId("");
-    setPhone("");
-    setEmail("");
   };
   const remove = (id) => setStudents(students.filter((s) => s.id !== id));
   const approvePending = (id, uname, pass) =>
@@ -1532,39 +1539,9 @@ function StudentsTab({ t, students, setStudents, classes }) {
         </div>
       )}
       <form onSubmit={add} style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 22, alignItems: "flex-end" }}>
-        <div style={{ flex: 1, minWidth: 160 }}>
+        <div style={{ flex: 1, minWidth: 200 }}>
           <ChalkInput label={t.studentName} icon={<User size={16} color={COLORS.chalkDim} />} value={name} onChange={(e) => setName(e.target.value)} placeholder={t.studentNamePh} />
         </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <ChalkInput label={t.chooseUsername} value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.usernamePh} dir="ltr" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <ChalkInput label={t.password} icon={<Lock size={16} color={COLORS.chalkDim} />} value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <ChalkInput label={t.phone} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <ChalkInput label={t.emailOptional} value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
-            <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{t.assignClass}</span>
-            <select
-              value={classId}
-              onChange={(e) => setClassId(e.target.value)}
-              style={{ background: "rgba(255,255,255,0.03)", border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16 }}
-            >
-              <option value="" style={{ color: "#000" }}>{t.noClassOpt}</option>
-              {(classes || []).map((c) => (
-                <option key={c.id} value={c.id} style={{ color: "#000" }}>{c.name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <ChalkButton type="button" variant="outline" color={COLORS.chalkBlue} onClick={() => setPassword(genPassword())}>
-          {t.generatePass}
-        </ChalkButton>
         <ChalkButton type="submit" color={COLORS.chalkYellow}>
           <Plus size={16} /> {t.add}
         </ChalkButton>
