@@ -273,7 +273,9 @@ const T = {
     qkEssay: "سؤال مقالي",
     qkFillBlank: "أكمل الفراغ",
     qkMatching: "توصيل",
-    fillBlankTextHint: "اكتب القطعة، وحط ___ (ثلاث شرطات) في مكان كل فراغ",
+    fillBlankTextHint: "اكتب القطعة أو الجمل، وحط ___ (ثلاث شرطات) في مكان كل فراغ. تقدر تكتب كل جملة في سطر لوحدها زي ورقة عمل عادية.",
+    wordBankLabel: "الكلمات المتاحة",
+    wordBankEmpty: "كل الكلمات اتحطت",
     fillBlankTextPh: "الشمس ___ من الشرق والسماء لونها ___",
     blanksAnswersLabel: "إجابات الفراغات بالترتيب",
     blankWordPh: "الكلمة الصح",
@@ -466,7 +468,9 @@ const T = {
     qkEssay: "Essay",
     qkFillBlank: "Fill in the blank",
     qkMatching: "Matching",
-    fillBlankTextHint: "Write the passage, and put ___ (three underscores) where each blank goes",
+    fillBlankTextHint: "Write the passage or sentences, and put ___ (three underscores) where each blank goes. You can put each sentence on its own line, like a regular worksheet.",
+    wordBankLabel: "Word bank",
+    wordBankEmpty: "All words have been placed",
     fillBlankTextPh: "The sun ___ in the east and the sky is ___",
     blanksAnswersLabel: "Blank answers, in order",
     blankWordPh: "Correct word",
@@ -659,7 +663,9 @@ const T = {
     qkEssay: "Question ouverte",
     qkFillBlank: "Texte à trous",
     qkMatching: "Association",
-    fillBlankTextHint: "Écrivez le texte, et mettez ___ (trois tirets bas) à la place de chaque trou",
+    fillBlankTextHint: "Écrivez le texte ou les phrases, et mettez ___ (trois tirets bas) à la place de chaque trou. Vous pouvez mettre chaque phrase sur sa propre ligne, comme une fiche d'exercice.",
+    wordBankLabel: "Banque de mots",
+    wordBankEmpty: "Tous les mots ont été placés",
     fillBlankTextPh: "Le soleil se lève à l'___ et le ciel est ___",
     blanksAnswersLabel: "Réponses des trous, dans l'ordre",
     blankWordPh: "Mot correct",
@@ -697,20 +703,21 @@ function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chal
   const base = {
     fontFamily: "Cairo, sans-serif",
     fontWeight: 700,
-    fontSize: 17,
-    padding: "12px 22px",
-    borderRadius: 10,
+    fontSize: 16,
+    padding: "12px 24px",
+    borderRadius: 999,
     cursor: disabled ? "not-allowed" : "pointer",
     display: "inline-flex",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     transition: "transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease",
     border: `1.5px solid ${color}`,
-    background: variant === "solid" ? (hover ? color : "transparent") : hover ? `${color}22` : "transparent",
+    background: variant === "solid" ? (hover ? color : `${color}14`) : hover ? `${color}22` : "transparent",
     color: variant === "solid" ? (hover ? "#0B0F14" : color) : color,
     opacity: disabled ? 0.5 : 1,
-    transform: hover && !disabled ? "translateY(-2px)" : "translateY(0)",
-    boxShadow: hover && !disabled ? `0 0 18px ${color}66` : "none",
+    transform: hover && !disabled ? "translateY(-1px)" : "translateY(0)",
+    boxShadow: hover && !disabled ? `0 4px 20px ${color}55` : "none",
     ...style,
   };
   return (
@@ -723,10 +730,10 @@ function ChalkButton({ children, onClick, variant = "solid", color = COLORS.chal
 function ChalkInput({ label, icon, dir, ...props }) {
   return (
     <label style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "Cairo, sans-serif" }}>
-      {label && <span style={{ color: COLORS.chalkDim, fontSize: 15, fontWeight: 600 }}>{label}</span>}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, border: `1px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", background: "rgba(255,255,255,0.03)" }}>
+      {label && <span style={{ color: COLORS.chalkDim, fontSize: 14.5, fontWeight: 600 }}>{label}</span>}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 14, padding: "12px 16px", background: "rgba(255,255,255,0.035)" }}>
         {icon}
-        <input {...props} dir={dir} style={{ background: "transparent", border: "none", outline: "none", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 17, width: "100%" }} />
+        <input {...props} dir={dir} style={{ background: "transparent", border: "none", outline: "none", color: COLORS.chalk, fontFamily: "Cairo, sans-serif", fontSize: 16, width: "100%" }} />
       </div>
     </label>
   );
@@ -763,8 +770,8 @@ function Board({ lang, children }) {
         style={{
           maxWidth: 960,
           margin: "0 auto",
-          border: `2.5px solid ${COLORS.frame}`,
-          borderRadius: 18,
+          border: `2px solid ${COLORS.frame}`,
+          borderRadius: 24,
           boxShadow: `0 0 0 1px rgba(0,0,0,0.6), 0 0 50px rgba(201,162,39,0.16), 0 30px 60px rgba(0,0,0,0.6)`,
           padding: "clamp(24px,5vw,40px) clamp(20px,4vw,34px) clamp(30px,5vw,46px)",
           background: `linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.2))`,
@@ -840,11 +847,32 @@ function TopBar({ back, label, lang, setLang }) {
   );
 }
 
-const rowStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", border: `1px solid rgba(201,162,39,0.25)`, borderRadius: 10, padding: "12px 14px", background: "rgba(255,255,255,0.02)" };
-const iconBtnStyle = { background: "none", border: "none", cursor: "pointer", padding: 6 };
+const rowStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", border: `1px solid rgba(201,162,39,0.2)`, borderRadius: 16, padding: "14px 16px", background: "rgba(255,255,255,0.025)", transition: "background 0.15s ease, border-color 0.15s ease" };
+const iconBtnStyle = { background: "rgba(255,255,255,0.04)", border: "none", borderRadius: 10, cursor: "pointer", padding: 8, display: "inline-flex", alignItems: "center", justifyContent: "center" };
 
-function EmptyNote({ text }) {
-  return <div style={{ textAlign: "center", color: COLORS.chalkDim, padding: "30px 10px", border: `1px dashed rgba(201,162,39,0.3)`, borderRadius: 10, fontSize: 15 }}>{text}</div>;
+function EmptyNote({ text, title, icon }) {
+  return (
+    <div style={{ textAlign: "center", color: COLORS.chalkDim, padding: "40px 16px", border: `1px solid rgba(201,162,39,0.18)`, borderRadius: 18, background: "rgba(255,255,255,0.015)" }}>
+      <div
+        style={{
+          width: 52,
+          height: 52,
+          borderRadius: 14,
+          background: "rgba(232,180,75,0.1)",
+          border: `1px solid rgba(201,162,39,0.3)`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          margin: "0 auto 14px",
+          color: COLORS.chalkYellow,
+        }}
+      >
+        {icon || <ClipboardList size={22} />}
+      </div>
+      {title && <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16, marginBottom: 4 }}>{title}</div>}
+      <div style={{ fontSize: 14.5 }}>{text}</div>
+    </div>
+  );
 }
 
 /* ---------- admin ---------- */
@@ -934,28 +962,42 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
   const currentTab = tabs.find((tb) => tb.id === tab);
 
   const navButtonStyle = (id) => ({
-    background: tab === id ? "rgba(201,162,39,0.14)" : "none",
-    border: "none",
-    borderInlineStart: tab === id ? `3px solid ${COLORS.chalkYellow}` : "3px solid transparent",
+    background: tab === id ? "rgba(232,180,75,0.14)" : "transparent",
+    border: tab === id ? `1px solid rgba(201,162,39,0.4)` : "1px solid transparent",
     cursor: "pointer",
     color: tab === id ? COLORS.chalkYellow : COLORS.chalkDim,
     fontFamily: "Cairo, sans-serif",
     fontWeight: 700,
-    fontSize: 16,
-    padding: "10px 14px",
-    borderRadius: 8,
+    fontSize: 15.5,
+    padding: "11px 14px",
+    borderRadius: 12,
     display: "flex",
     alignItems: "center",
     gap: 10,
     width: "100%",
     textAlign: "start",
     justifyContent: "flex-start",
+    transition: "background 0.15s ease, border-color 0.15s ease",
   });
 
   const renderNavButtons = (afterClick) =>
     tabs.map((tb) => (
       <button key={tb.id} onClick={() => { setTab(tb.id); afterClick && afterClick(); }} style={navButtonStyle(tb.id)}>
-        {tb.icon} {tb.label}
+        <span
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 8,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: tab === tb.id ? "rgba(232,180,75,0.22)" : "rgba(255,255,255,0.04)",
+            flex: "0 0 auto",
+          }}
+        >
+          {tb.icon}
+        </span>
+        {tb.label}
       </button>
     ));
 
@@ -982,8 +1024,8 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
           justifyContent: "space-between",
           background: "rgba(255,255,255,0.03)",
           border: `1px solid rgba(201,162,39,0.35)`,
-          borderRadius: 10,
-          padding: "12px 14px",
+          borderRadius: 14,
+          padding: "12px 16px",
           color: COLORS.chalkYellow,
           fontFamily: "Cairo, sans-serif",
           fontWeight: 700,
@@ -1025,9 +1067,38 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
 
 function StatCard({ icon, value, label, color }) {
   return (
-    <div style={{ flex: "1 1 140px", border: `1px solid rgba(201,162,39,0.3)`, borderRadius: 12, padding: "16px 14px", background: "rgba(255,255,255,0.02)", display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, color }}>{icon}</div>
-      <div style={{ color: COLORS.chalk, fontSize: 27, fontWeight: 800 }}>{value}</div>
+    <div
+      style={{
+        flex: "1 1 150px",
+        border: `1px solid rgba(201,162,39,0.22)`,
+        borderRadius: 18,
+        padding: "18px 18px",
+        background: "rgba(255,255,255,0.02)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        position: "relative",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 14,
+          insetInlineEnd: 14,
+          width: 38,
+          height: 38,
+          borderRadius: 11,
+          background: `${color}1F`,
+          border: `1px solid ${color}55`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color,
+        }}
+      >
+        {icon}
+      </div>
+      <div style={{ color: COLORS.chalk, fontSize: 28, fontWeight: 800 }}>{value}</div>
       <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{label}</div>
     </div>
   );
@@ -1071,7 +1142,7 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
             <Award size={16} /> {t.dashTopStudents}
           </div>
           {topStudents.length === 0 ? (
-            <EmptyNote text={t.dashNoData} />
+            <EmptyNote text={t.dashNoData} icon={<Award size={22} />} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {topStudents.map((s, i) => (
@@ -1092,7 +1163,7 @@ function DashboardTab({ t, lang, students, lessons, progress, goTo }) {
             <Clock size={16} /> {t.dashRecentLessons}
           </div>
           {recentLessons.length === 0 ? (
-            <EmptyNote text={t.dashNoData} />
+            <EmptyNote text={t.dashNoData} icon={<Clock size={22} />} />
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {recentLessons.map((l) => (
@@ -1155,7 +1226,7 @@ function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, o
       </form>
 
       {classes.length === 0 ? (
-        <EmptyNote text={t.noClasses} />
+        <EmptyNote text={t.noClasses} icon={<GraduationCap size={22} />} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {classes.map((c) => {
@@ -1500,7 +1571,7 @@ function StudentsTab({ t, students, setStudents, classes }) {
       </form>
 
       {approved.length === 0 ? (
-        <EmptyNote text={t.noStudents} />
+        <EmptyNote text={t.noStudents} icon={<Users size={22} />} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {approved.map((s) => (
@@ -2109,7 +2180,7 @@ function LessonsTab({ t, lessons, setLessons, students, classes, externalEditId,
       )}
 
       {myLessons.length === 0 ? (
-        <EmptyNote text={t.noLessons} />
+        <EmptyNote text={t.noLessons} icon={<BookOpen size={22} />} />
       ) : (
         Object.entries(grouped).map(([cat, items]) => (
           <div key={cat} style={{ marginBottom: 20 }}>
@@ -2328,7 +2399,7 @@ function ExamsTab({ t, lessons, setLessons, students, classes, externalEditId, o
       )}
 
       {myExams.length === 0 ? (
-        <EmptyNote text={t.noExams} />
+        <EmptyNote text={t.noExams} icon={<FileText size={22} />} />
       ) : (
         Object.entries(grouped).map(([cat, items]) => (
           <div key={cat} style={{ marginBottom: 20 }}>
@@ -2607,7 +2678,35 @@ function FillBlankQuestion({ t, q, value, onChange }) {
 
   return (
     <div>
-      <div style={{ color: COLORS.chalk, fontSize: 15, lineHeight: 2.2 }}>
+      <div style={{ border: `1.5px solid rgba(201,162,39,0.35)`, borderRadius: 8, padding: "10px 12px", marginBottom: 12 }}>
+        <div style={{ color: COLORS.chalkBlue, fontSize: 12.5, fontWeight: 700, marginBottom: 8 }}>{t.wordBankLabel}</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {remaining.length === 0 ? (
+            <span style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.wordBankEmpty}</span>
+          ) : (
+            remaining.map((w, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setPicked(w)}
+                style={{
+                  padding: "5px 14px",
+                  borderRadius: 16,
+                  border: `1.5px solid ${picked === w ? COLORS.chalkBlue : "rgba(201,162,39,0.35)"}`,
+                  background: picked === w ? "rgba(79,209,197,0.15)" : "transparent",
+                  color: picked === w ? COLORS.chalkBlue : COLORS.chalk,
+                  fontFamily: "Cairo, sans-serif",
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
+                {w}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+      <div style={{ color: COLORS.chalk, fontSize: 15, lineHeight: 2.2, whiteSpace: "pre-wrap" }}>
         {parts.map((part, i) => (
           <span key={i}>
             {part}
@@ -2635,28 +2734,7 @@ function FillBlankQuestion({ t, q, value, onChange }) {
           </span>
         ))}
       </div>
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10 }}>
-        {remaining.map((w, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setPicked(w)}
-            style={{
-              padding: "5px 12px",
-              borderRadius: 16,
-              border: `1.5px solid ${picked === w ? COLORS.chalkBlue : "rgba(201,162,39,0.35)"}`,
-              background: picked === w ? "rgba(79,209,197,0.15)" : "transparent",
-              color: picked === w ? COLORS.chalkBlue : COLORS.chalk,
-              fontFamily: "Cairo, sans-serif",
-              fontSize: 14,
-              cursor: "pointer",
-            }}
-          >
-            {w}
-          </button>
-        ))}
-      </div>
-      <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 4 }}>{t.fillBlankHint}</div>
+      <div style={{ color: COLORS.chalkDim, fontSize: 12.5, marginTop: 8 }}>{t.fillBlankHint}</div>
     </div>
   );
 }
