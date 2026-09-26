@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2, Eye, EyeOff, Pencil, Ban, Unlock, Maximize } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2, Eye, EyeOff, Pencil, Ban, Unlock, Maximize, RotateCcw } from "lucide-react";
 import { uploadToCloudinary } from "./cloudinary";
 import {
   subscribeToStudents,
@@ -336,6 +336,9 @@ const T = {
     yourAnswerLabel: "إجابة الطالب:",
     markCorrectLabel: "صح",
     essaySubmittedLabel: "إجابة مقالية",
+    resetExam: "إعادة تفعيل الامتحان",
+    resetExamConfirm: "متأكد عايز تسمح للطالب بحل الامتحان تاني؟ إجابته الحالية هتتمسح.",
+    examResetNote: "المدرس سمحلك تحل الامتحان تاني.",
     examPickAnswer: "اختار إجابة لكل سؤال قبل ما تسلّم.",
     examConfirmSubmit: "متأكد عايز تسلّم؟ مش هتقدر تغيّر إجاباتك بعد كده.",
     uploadFile: "ارفع فيديو أو PDF",
@@ -543,6 +546,9 @@ const T = {
     yourAnswerLabel: "Student's answer:",
     markCorrectLabel: "Correct",
     essaySubmittedLabel: "Essay answer",
+    resetExam: "Allow retake",
+    resetExamConfirm: "Allow this student to retake the exam? Their current answers will be cleared.",
+    examResetNote: "Your teacher allowed you to retake this exam.",
     examPickAnswer: "Pick an answer for every question before submitting.",
     examConfirmSubmit: "Sure you want to submit? You won't be able to change your answers after this.",
     uploadFile: "Upload video or PDF",
@@ -750,6 +756,9 @@ const T = {
     yourAnswerLabel: "Réponse de l'élève :",
     markCorrectLabel: "Correct",
     essaySubmittedLabel: "Réponse ouverte",
+    resetExam: "Autoriser à repasser",
+    resetExamConfirm: "Autoriser cet élève à repasser l'examen ? Ses réponses actuelles seront effacées.",
+    examResetNote: "Votre enseignant vous a autorisé à repasser cet examen.",
     examPickAnswer: "Choisissez une réponse à chaque question avant de soumettre.",
     examConfirmSubmit: "Sûr de vouloir soumettre ? Vous ne pourrez plus modifier vos réponses après.",
     uploadFile: "Importer une vidéo ou un PDF",
@@ -2405,7 +2414,7 @@ function formatAnswerForDisplay(kind, q, ans, t) {
   return String(ans);
 }
 
-function ExamSubmissionRow({ t, student, lesson, entry, expanded, onToggle, onRelease }) {
+function ExamSubmissionRow({ t, student, lesson, entry, expanded, onToggle, onRelease, onReset }) {
   const questions = lesson.questions || [];
   const answers = entry.examAnswers || {};
 
@@ -2445,11 +2454,20 @@ function ExamSubmissionRow({ t, student, lesson, entry, expanded, onToggle, onRe
           <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{student.name}</div>
           <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.finalScoreLabel(shownScore.correct, shownScore.total)}</div>
         </div>
-        {released && (
-          <span style={{ border: `1px solid ${COLORS.chalkBlue}`, color: COLORS.chalkBlue, borderRadius: 20, padding: "1px 10px", fontSize: 12, fontWeight: 700 }}>
-            {t.gradeReleased}
-          </span>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {released && (
+            <span style={{ border: `1px solid ${COLORS.chalkBlue}`, color: COLORS.chalkBlue, borderRadius: 20, padding: "1px 10px", fontSize: 12, fontWeight: 700 }}>
+              {t.gradeReleased}
+            </span>
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); if (window.confirm(t.resetExamConfirm)) onReset(); }}
+            style={iconBtnStyle}
+            title={t.resetExam}
+          >
+            <RotateCcw size={16} color={COLORS.chalkYellow} />
+          </button>
+        </div>
       </div>
 
       {expanded && (
@@ -2508,6 +2526,12 @@ function ExamGradingPanel({ t, lesson, students, progress, setProgress }) {
             const mine = { ...(progress[s.id] || {}) };
             mine[lesson.id] = { ...(mine[lesson.id] || {}), examFinalScore: finalScore, examReleased: true };
             setProgress({ ...progress, [s.id]: mine });
+          }}
+          onReset={() => {
+            const mine = { ...(progress[s.id] || {}) };
+            mine[lesson.id] = { watched: false, examAnswers: null, examScore: null, examFinalScore: null, examReleased: null, examStartedAt: null };
+            setProgress({ ...progress, [s.id]: mine });
+            setExpandedId(null);
           }}
         />
       ))}
