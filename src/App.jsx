@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
-import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2, Eye, EyeOff, Pencil, Ban, Unlock } from "lucide-react";
+import { BookOpen, Users, ClipboardList, Plus, Trash2, CheckCircle2, Circle, Lock, ArrowRight, ExternalLink, Settings, User, Copy, Check, Link2, LayoutDashboard, TrendingUp, Award, Clock, GraduationCap, Menu, X, Video, FileText, PenLine, ListChecks, Upload, Loader2, Eye, EyeOff, Pencil, Ban, Unlock, Maximize } from "lucide-react";
 import { uploadToCloudinary } from "./cloudinary";
 import {
   subscribeToStudents,
@@ -48,29 +48,91 @@ function toEmbedUrl(url, opts = {}) {
 }
 
 // عرض درس (فيديو/PDF/PPT/Word) جوه الصفحة، بيستخدم في شاشة المدرس (للتجربة) وشاشة الطالب
-function LessonEmbed({ lesson }) {
+function LessonEmbed({ lesson, t }) {
+  const [expanded, setExpanded] = useState(false);
   const embed = toEmbedUrl(lesson.url, { allowDownload: lesson.allowDownload });
   if (!embed) return null;
-  if (embed.type === "file-video") {
-    return (
+
+  const media =
+    embed.type === "file-video" ? (
       <video
         src={embed.src}
         controls
         controlsList={lesson.allowDownload ? "noremoteplayback" : "nodownload noremoteplayback"}
         disablePictureInPicture
         onContextMenu={(e) => !lesson.allowDownload && e.preventDefault()}
-        style={{ width: "100%", maxWidth: 900, borderRadius: 8, background: "#000" }}
+        style={expanded ? { width: "100%", height: "100%", background: "#000" } : { width: "100%", maxWidth: 900, borderRadius: 8, background: "#000" }}
+      />
+    ) : (
+      <iframe
+        src={embed.src}
+        title={lesson.title}
+        allow="autoplay; encrypted-media; fullscreen"
+        allowFullScreen
+        style={
+          expanded
+            ? { width: "100%", height: "100%", border: "none" }
+            : { width: "100%", maxWidth: 900, aspectRatio: lesson.type === "video" ? "16/9" : "3/4", border: "none", borderRadius: 8 }
+        }
       />
     );
+
+  if (expanded) {
+    return createPortal(
+      <div style={{ position: "fixed", inset: 0, zIndex: 99999, background: "#000", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: 10, background: "rgba(0,0,0,0.85)" }}>
+          <button
+            onClick={() => setExpanded(false)}
+            style={{
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.25)",
+              borderRadius: 10,
+              padding: "8px 14px",
+              cursor: "pointer",
+              color: "#fff",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontFamily: "Cairo, sans-serif",
+              fontWeight: 700,
+              fontSize: 14,
+            }}
+          >
+            <X size={16} /> {t ? t.closeFullscreen : "Close"}
+          </button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>{media}</div>
+      </div>,
+      document.body
+    );
   }
+
   return (
-    <iframe
-      src={embed.src}
-      title={lesson.title}
-      allow="autoplay; encrypted-media; fullscreen"
-      allowFullScreen
-      style={{ width: "100%", maxWidth: 900, aspectRatio: lesson.type === "video" ? "16/9" : "3/4", border: "none", borderRadius: 8 }}
-    />
+    <div style={{ position: "relative", width: "100%", maxWidth: 900 }}>
+      {media}
+      <button
+        onClick={() => setExpanded(true)}
+        title={t ? t.viewFullscreen : "Fullscreen"}
+        style={{
+          position: "absolute",
+          bottom: 10,
+          insetInlineEnd: 10,
+          background: "rgba(0,0,0,0.65)",
+          border: "1px solid rgba(255,255,255,0.3)",
+          borderRadius: 8,
+          padding: "6px 10px",
+          cursor: "pointer",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 12.5,
+          fontFamily: "Cairo, sans-serif",
+        }}
+      >
+        <Maximize size={14} /> {t ? t.viewFullscreen : "Fullscreen"}
+      </button>
+    </div>
   );
 }
 
@@ -245,6 +307,8 @@ const T = {
     lessonWordUrlPh: "https://...",
     allowDownloadLabel: "السماح للطالب بتحميل الملف",
     downloadFile: "تحميل الملف",
+    viewFullscreen: "تكبير على كامل الشاشة",
+    closeFullscreen: "إغلاق",
     tryIt: "جرّب الدرس",
     tryItPreviewNote: "معاينة — كده بالظبط الطالب هيشوف الدرس ده",
     lessonContent: "محتوى الدرس",
@@ -262,6 +326,16 @@ const T = {
     submitExam: "سلّم الامتحان",
     examAlreadySubmitted: "سلّمت الامتحان ده قبل كده",
     examYourScore: (correct, total) => `نتيجتك: ${correct} من ${total} صح`,
+    examAwaitingGrading: "تم تسليم الامتحان، وهيظهرلك نتيجتك بعد ما المدرس يراجعه.",
+    gradeExam: "تصحيح الامتحان",
+    backToExam: "رجوع للامتحان",
+    noSubmissionsYet: "لسه محدش سلّم الامتحان ده.",
+    finalScoreLabel: (correct, total) => `الدرجة: ${correct} من ${total}`,
+    releaseGrade: "اعتماد ونشر الدرجة",
+    gradeReleased: "الدرجة اتنشرت للطالب",
+    yourAnswerLabel: "إجابة الطالب:",
+    markCorrectLabel: "صح",
+    essaySubmittedLabel: "إجابة مقالية",
     examPickAnswer: "اختار إجابة لكل سؤال قبل ما تسلّم.",
     examConfirmSubmit: "متأكد عايز تسلّم؟ مش هتقدر تغيّر إجاباتك بعد كده.",
     uploadFile: "ارفع فيديو أو PDF",
@@ -440,6 +514,8 @@ const T = {
     lessonWordUrlPh: "https://...",
     allowDownloadLabel: "Allow the student to download this file",
     downloadFile: "Download file",
+    viewFullscreen: "View fullscreen",
+    closeFullscreen: "Close",
     tryIt: "Try this lesson",
     tryItPreviewNote: "Preview — this is exactly what the student will see",
     lessonContent: "Lesson content",
@@ -457,6 +533,16 @@ const T = {
     submitExam: "Submit exam",
     examAlreadySubmitted: "You already submitted this exam",
     examYourScore: (correct, total) => `Your score: ${correct} of ${total} correct`,
+    examAwaitingGrading: "Exam submitted. Your score will show once the teacher reviews it.",
+    gradeExam: "Grade exam",
+    backToExam: "Back to exam",
+    noSubmissionsYet: "No one has submitted this exam yet.",
+    finalScoreLabel: (correct, total) => `Score: ${correct} of ${total}`,
+    releaseGrade: "Approve & release grade",
+    gradeReleased: "Grade released to the student",
+    yourAnswerLabel: "Student's answer:",
+    markCorrectLabel: "Correct",
+    essaySubmittedLabel: "Essay answer",
     examPickAnswer: "Pick an answer for every question before submitting.",
     examConfirmSubmit: "Sure you want to submit? You won't be able to change your answers after this.",
     uploadFile: "Upload video or PDF",
@@ -635,6 +721,8 @@ const T = {
     lessonWordUrlPh: "https://...",
     allowDownloadLabel: "Autoriser l'étudiant à télécharger ce fichier",
     downloadFile: "Télécharger le fichier",
+    viewFullscreen: "Plein écran",
+    closeFullscreen: "Fermer",
     tryIt: "Essayer ce cours",
     tryItPreviewNote: "Aperçu — c'est exactement ce que l'étudiant verra",
     lessonContent: "Contenu du cours",
@@ -652,6 +740,16 @@ const T = {
     submitExam: "Soumettre l'examen",
     examAlreadySubmitted: "Vous avez déjà soumis cet examen",
     examYourScore: (correct, total) => `Votre score : ${correct} sur ${total} correctes`,
+    examAwaitingGrading: "Examen soumis. Votre score s'affichera après correction par l'enseignant.",
+    gradeExam: "Corriger l'examen",
+    backToExam: "Retour à l'examen",
+    noSubmissionsYet: "Personne n'a encore soumis cet examen.",
+    finalScoreLabel: (correct, total) => `Score : ${correct} sur ${total}`,
+    releaseGrade: "Valider et publier la note",
+    gradeReleased: "Note publiée pour l'élève",
+    yourAnswerLabel: "Réponse de l'élève :",
+    markCorrectLabel: "Correct",
+    essaySubmittedLabel: "Réponse ouverte",
     examPickAnswer: "Choisissez une réponse à chaque question avant de soumettre.",
     examConfirmSubmit: "Sûr de vouloir soumettre ? Vous ne pourrez plus modifier vos réponses après.",
     uploadFile: "Importer une vidéo ou un PDF",
@@ -959,7 +1057,7 @@ function MobileDrawer({ open, onClose, lang, children }) {
   );
 }
 
-function AdminDashboard({ back, students, setStudents, lessons, setLessons, classes, setClasses, progress, adminPass, setAdminPass, lang, setLang }) {
+function AdminDashboard({ back, students, setStudents, lessons, setLessons, classes, setClasses, progress, setProgress, adminPass, setAdminPass, lang, setLang }) {
   const t = T[lang];
   const [tab, setTab] = useState("dashboard");
   const [navOpen, setNavOpen] = useState(false);
@@ -1063,7 +1161,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
           {tab === "classes" && <ClassesTab t={t} lang={lang} classes={classes} setClasses={setClasses} students={students} lessons={lessons} onOpenLesson={openLessonEditor} onOpenExam={openExamEditor} />}
           {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} classes={classes} />}
           {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} externalEditId={pendingEditLessonId} onExternalEditHandled={() => setPendingEditLessonId(null)} />}
-          {tab === "exams" && <ExamsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} externalEditId={pendingEditExamId} onExternalEditHandled={() => setPendingEditExamId(null)} />}
+          {tab === "exams" && <ExamsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} progress={progress} setProgress={setProgress} externalEditId={pendingEditExamId} onExternalEditHandled={() => setPendingEditExamId(null)} />}
           {tab === "progress" && <ProgressTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} />}
           {tab === "settings" && <SettingsTab t={t} adminPass={adminPass} setAdminPass={setAdminPass} />}
         </div>
@@ -2279,7 +2377,7 @@ function LessonsTab({ t, lessons, setLessons, students, classes, externalEditId,
                     <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
                       <div style={{ color: COLORS.chalkYellow, fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>{t.tryItPreviewNote}</div>
                       {l.type === "text" && <div style={{ color: COLORS.chalk, fontSize: 15, lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: l.content }} />}
-                      {DOWNLOADABLE_TYPES.includes(l.type) && <LessonEmbed lesson={l} />}
+                      {DOWNLOADABLE_TYPES.includes(l.type) && <LessonEmbed lesson={l} t={t} />}
                     </div>
                   )}
                 </div>
@@ -2294,10 +2392,134 @@ function LessonsTab({ t, lessons, setLessons, students, classes, externalEditId,
 
 const EMPTY_EXAM_FORM = { title: "", category: "", desc: "", format: "builder", url: "", allowDownload: true, durationMinutes: "", questions: [], visibleTo: null };
 
-function ExamsTab({ t, lessons, setLessons, students, classes, externalEditId, onExternalEditHandled }) {
+function formatAnswerForDisplay(kind, q, ans, t) {
+  if (ans == null || ans === "") return "—";
+  if (kind === "mcq") {
+    const opt = (q.options || []).find((o) => o.id === ans);
+    return opt ? opt.text : "—";
+  }
+  if (kind === "truefalse") return ans === true ? t.trueLabel : ans === false ? t.falseLabel : "—";
+  if (kind === "fillblank") return (ans || []).filter(Boolean).join(" / ") || "—";
+  if (kind === "matching") return Object.values(ans || {}).filter(Boolean).join(" / ") || "—";
+  if (kind === "essay") return ans;
+  return String(ans);
+}
+
+function ExamSubmissionRow({ t, student, lesson, entry, expanded, onToggle, onRelease }) {
+  const questions = lesson.questions || [];
+  const answers = entry.examAnswers || {};
+
+  const computeAuto = (q) => {
+    const kind = q.kind || "mcq";
+    const ans = answers[q.id];
+    if (kind === "mcq") return !!ans && ans === q.correctOptionId;
+    if (kind === "truefalse") return ans === q.correctAnswer;
+    if (kind === "fillblank") {
+      const blanks = q.blanks || [];
+      const arr = ans || [];
+      return blanks.length > 0 && blanks.every((b, i) => (arr[i] || "").trim().toLowerCase() === (b || "").trim().toLowerCase());
+    }
+    if (kind === "matching") {
+      const pairs = q.pairs || [];
+      const m = ans || {};
+      return pairs.length > 0 && pairs.every((p) => m[p.id] === p.right);
+    }
+    return false;
+  };
+
+  const [marks, setMarks] = useState(() => {
+    const init = {};
+    questions.forEach((q) => { init[q.id] = computeAuto(q); });
+    return init;
+  });
+
+  const correctCount = Object.values(marks).filter(Boolean).length;
+  const total = questions.length;
+  const released = !!entry.examReleased;
+  const shownScore = released ? entry.examFinalScore || entry.examScore : entry.examScore;
+
+  return (
+    <div style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={onToggle}>
+        <div>
+          <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{student.name}</div>
+          <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.finalScoreLabel(shownScore.correct, shownScore.total)}</div>
+        </div>
+        {released && (
+          <span style={{ border: `1px solid ${COLORS.chalkBlue}`, color: COLORS.chalkBlue, borderRadius: 20, padding: "1px 10px", fontSize: 12, fontWeight: 700 }}>
+            {t.gradeReleased}
+          </span>
+        )}
+      </div>
+
+      {expanded && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, borderTop: `1px dashed rgba(201,162,39,0.3)`, paddingTop: 10 }}>
+          {questions.map((q, qi) => {
+            const kind = q.kind || "mcq";
+            return (
+              <div key={q.id} style={{ border: `1px solid rgba(201,162,39,0.2)`, borderRadius: 8, padding: 10 }}>
+                <div style={{ color: COLORS.chalk, fontWeight: 700, marginBottom: 6, fontSize: 14.5 }}>
+                  {qi + 1}. {q.text || ""}
+                </div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 13.5, marginBottom: 6 }}>
+                  {kind === "essay" ? t.essaySubmittedLabel : t.yourAnswerLabel} {formatAnswerForDisplay(kind, q, answers[q.id], t)}
+                </div>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input type="checkbox" checked={!!marks[q.id]} onChange={(e) => setMarks({ ...marks, [q.id]: e.target.checked })} />
+                  <span style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.markCorrectLabel}</span>
+                </label>
+              </div>
+            );
+          })}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ color: COLORS.chalkYellow, fontWeight: 800 }}>{t.finalScoreLabel(correctCount, total)}</span>
+            <ChalkButton type="button" color={COLORS.chalkYellow} onClick={() => onRelease({ correct: correctCount, total })}>
+              {t.releaseGrade}
+            </ChalkButton>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ExamGradingPanel({ t, lesson, students, progress, setProgress }) {
+  const [expandedId, setExpandedId] = useState(null);
+  const submissions = students
+    .filter((s) => progress[s.id] && progress[s.id][lesson.id] && progress[s.id][lesson.id].examScore)
+    .map((s) => ({ student: s, entry: progress[s.id][lesson.id] }));
+
+  if (submissions.length === 0) {
+    return <div style={{ color: COLORS.chalkDim, fontSize: 14, padding: "6px 0" }}>{t.noSubmissionsYet}</div>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {submissions.map(({ student: s, entry }) => (
+        <ExamSubmissionRow
+          key={s.id}
+          t={t}
+          student={s}
+          lesson={lesson}
+          entry={entry}
+          expanded={expandedId === s.id}
+          onToggle={() => setExpandedId(expandedId === s.id ? null : s.id)}
+          onRelease={(finalScore) => {
+            const mine = { ...(progress[s.id] || {}) };
+            mine[lesson.id] = { ...(mine[lesson.id] || {}), examFinalScore: finalScore, examReleased: true };
+            setProgress({ ...progress, [s.id]: mine });
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ExamsTab({ t, lessons, setLessons, students, classes, progress, setProgress, externalEditId, onExternalEditHandled }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_EXAM_FORM);
   const [previewId, setPreviewId] = useState(null);
+  const [gradingId, setGradingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
 
   const myExams = useMemo(() => lessons.filter((l) => l.type === "exam"), [lessons]);
@@ -2467,6 +2689,11 @@ function ExamsTab({ t, lessons, setLessons, students, classes, externalEditId, o
                       {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
+                      {!isFileExam(l) && (
+                        <button onClick={() => setGradingId(gradingId === l.id ? null : l.id)} style={iconBtnStyle} title={t.gradeExam}>
+                          <ClipboardList size={16} color={gradingId === l.id ? COLORS.chalkYellow : COLORS.chalkBlue} />
+                        </button>
+                      )}
                       <button onClick={() => setPreviewId(previewId === l.id ? null : l.id)} style={iconBtnStyle} title={t.tryIt}>
                         {previewId === l.id ? <EyeOff size={16} color={COLORS.chalkBlue} /> : <Eye size={16} color={COLORS.chalkBlue} />}
                       </button>
@@ -2478,6 +2705,12 @@ function ExamsTab({ t, lessons, setLessons, students, classes, externalEditId, o
                       </button>
                     </div>
                   </div>
+                  {gradingId === l.id && (
+                    <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
+                      <div style={{ color: COLORS.chalkYellow, fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>{t.gradeExam}</div>
+                      <ExamGradingPanel t={t} lesson={l} students={students} progress={progress} setProgress={setProgress} />
+                    </div>
+                  )}
                   {isFileExam(l) && (
                     <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: "Cairo, sans-serif" }}>
                       <input
@@ -2498,7 +2731,7 @@ function ExamsTab({ t, lessons, setLessons, students, classes, externalEditId, o
                   {previewId === l.id && (
                     <div style={{ border: `1px dashed rgba(201,162,39,0.35)`, borderRadius: 8, padding: 12 }}>
                       <div style={{ color: COLORS.chalkYellow, fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>{t.tryItPreviewNote}</div>
-                      {isFileExam(l) ? <LessonEmbed lesson={l} /> : <ExamTaker t={t} lesson={l} entry={null} onStart={() => {}} onSubmit={() => {}} preview />}
+                      {isFileExam(l) ? <LessonEmbed lesson={l} t={t} /> : <ExamTaker t={t} lesson={l} entry={null} onStart={() => {}} onSubmit={() => {}} preview />}
                     </div>
                   )}
                 </div>
@@ -2890,11 +3123,19 @@ function ExamTaker({ t, lesson, entry, onStart, onSubmit, preview }) {
   }, [durationMs, entry?.examScore]);
 
   if (entry?.examScore) {
+    if (!entry.examReleased) {
+      return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 14.5 }}>{t.examAlreadySubmitted}</div>
+          <div style={{ color: COLORS.chalkDim, fontSize: 14.5 }}>{t.examAwaitingGrading}</div>
+        </div>
+      );
+    }
+    const finalScore = entry.examFinalScore || entry.examScore;
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 14.5 }}>{t.examAlreadySubmitted}</div>
-        <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16 }}>{t.examYourScore(entry.examScore.correct, entry.examScore.total)}</div>
-        {entry.examScore.essayCount > 0 && <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.examEssayNote(entry.examScore.essayCount)}</div>}
+        <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16 }}>{t.examYourScore(finalScore.correct, finalScore.total)}</div>
       </div>
     );
   }
@@ -3112,7 +3353,7 @@ function StudentDashboard({ back, student, students, setStudents, lessons, progr
 
   const submitExam = (lessonId, answers, score) => {
     const mine = { ...(progress[student.id] || {}) };
-    mine[lessonId] = { ...(mine[lessonId] || {}), watched: true, watchedAt: new Date().toISOString(), examAnswers: answers, examScore: score };
+    mine[lessonId] = { ...(mine[lessonId] || {}), watched: true, watchedAt: new Date().toISOString(), examAnswers: answers, examScore: score, examReleased: false };
     setProgress({ ...progress, [student.id]: mine });
   };
 
@@ -3189,7 +3430,7 @@ function StudentDashboard({ back, student, students, setStudents, lessons, progr
           )}
         </div>
         <div style={{ marginRight: 34 }}>
-          <LessonEmbed lesson={l} />
+          <LessonEmbed lesson={l} t={t} />
         </div>
       </div>
     );
@@ -3447,6 +3688,7 @@ export default function App() {
         classes={classes}
         setClasses={setClasses}
         progress={progress}
+        setProgress={setProgress}
         adminPass={adminPass}
         setAdminPass={setAdminPass}
         lang={lang}
