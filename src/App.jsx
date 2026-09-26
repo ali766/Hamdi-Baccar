@@ -50,6 +50,24 @@ function toEmbedUrl(url, opts = {}) {
 // عرض درس (فيديو/PDF/PPT/Word) جوه الصفحة، بيستخدم في شاشة المدرس (للتجربة) وشاشة الطالب
 function LessonEmbed({ lesson, t }) {
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      const tag = (e.target && e.target.tagName) || "";
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable);
+      if (typing) return;
+      if ((e.key === "f" || e.key === "F") && !expanded) {
+        e.preventDefault();
+        setExpanded(true);
+      } else if (e.key === "Escape" && expanded) {
+        e.preventDefault();
+        setExpanded(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [expanded]);
+
   const embed = toEmbedUrl(lesson.url, { allowDownload: lesson.allowDownload });
   if (!embed) return null;
 
@@ -307,7 +325,7 @@ const T = {
     lessonWordUrlPh: "https://...",
     allowDownloadLabel: "السماح للطالب بتحميل الملف",
     downloadFile: "تحميل الملف",
-    viewFullscreen: "تكبير على كامل الشاشة",
+    viewFullscreen: "تكبير على كامل الشاشة (F)",
     closeFullscreen: "إغلاق",
     tryIt: "جرّب الدرس",
     tryItPreviewNote: "معاينة — كده بالظبط الطالب هيشوف الدرس ده",
@@ -517,7 +535,7 @@ const T = {
     lessonWordUrlPh: "https://...",
     allowDownloadLabel: "Allow the student to download this file",
     downloadFile: "Download file",
-    viewFullscreen: "View fullscreen",
+    viewFullscreen: "View fullscreen (F)",
     closeFullscreen: "Close",
     tryIt: "Try this lesson",
     tryItPreviewNote: "Preview — this is exactly what the student will see",
@@ -727,7 +745,7 @@ const T = {
     lessonWordUrlPh: "https://...",
     allowDownloadLabel: "Autoriser l'étudiant à télécharger ce fichier",
     downloadFile: "Télécharger le fichier",
-    viewFullscreen: "Plein écran",
+    viewFullscreen: "Plein écran (F)",
     closeFullscreen: "Fermer",
     tryIt: "Essayer ce cours",
     tryItPreviewNote: "Aperçu — c'est exactement ce que l'étudiant verra",
