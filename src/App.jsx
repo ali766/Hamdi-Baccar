@@ -1092,12 +1092,25 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
   const [pendingEditExamId, setPendingEditExamId] = useState(null);
   const openLessonEditor = (id) => { setTab("lessons"); setPendingEditLessonId(id); };
   const openExamEditor = (id) => { setTab("exams"); setPendingEditExamId(id); };
+
+  const pendingReviewCount = useMemo(() => {
+    let count = 0;
+    students.forEach((s) => {
+      const mine = progress[s.id];
+      if (!mine) return;
+      Object.values(mine).forEach((entry) => {
+        if (entry && entry.examScore && !entry.examReleased) count++;
+      });
+    });
+    return count;
+  }, [students, progress]);
+
   const tabs = [
     { id: "dashboard", label: t.tabDashboard, icon: <LayoutDashboard size={16} /> },
     { id: "classes", label: t.tabClasses, icon: <GraduationCap size={16} /> },
     { id: "students", label: t.tabStudents, icon: <Users size={16} /> },
     { id: "lessons", label: t.tabLessons, icon: <BookOpen size={16} /> },
-    { id: "exams", label: t.tabExams, icon: <ListChecks size={16} /> },
+    { id: "exams", label: t.tabExams, icon: <ListChecks size={16} />, badge: pendingReviewCount },
     { id: "progress", label: t.tabProgress, icon: <ClipboardList size={16} /> },
     { id: "settings", label: t.tabSettings, icon: <Settings size={16} /> },
   ];
@@ -1139,7 +1152,27 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
         >
           {tb.icon}
         </span>
-        {tb.label}
+        <span style={{ flex: 1 }}>{tb.label}</span>
+        {!!tb.badge && (
+          <span
+            style={{
+              background: COLORS.chalkPink,
+              color: "#fff",
+              borderRadius: 999,
+              minWidth: 20,
+              height: 20,
+              padding: "0 6px",
+              fontSize: 12,
+              fontWeight: 800,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flex: "0 0 auto",
+            }}
+          >
+            {tb.badge}
+          </span>
+        )}
       </button>
     ));
 
@@ -1179,7 +1212,28 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
         <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {currentTab?.icon} {currentTab?.label}
         </span>
-        <Menu size={18} />
+        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {pendingReviewCount > 0 && (
+            <span
+              style={{
+                background: COLORS.chalkPink,
+                color: "#fff",
+                borderRadius: 999,
+                minWidth: 20,
+                height: 20,
+                padding: "0 6px",
+                fontSize: 12,
+                fontWeight: 800,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {pendingReviewCount}
+            </span>
+          )}
+          <Menu size={18} />
+        </span>
       </button>
       <div className="admin-layout">
         <nav className="admin-sidebar">{renderNavButtons()}</nav>
@@ -2632,6 +2686,11 @@ function ExamsTab({ t, lessons, setLessons, students, classes, progress, setProg
   }, [myExams]);
 
   const isFileExam = (l) => l.examFormat === "pdf" || l.examFormat === "word";
+  const pendingCountFor = (lessonId) =>
+    students.reduce((n, s) => {
+      const entry = progress[s.id] && progress[s.id][lessonId];
+      return entry && entry.examScore && !entry.examReleased ? n + 1 : n;
+    }, 0);
 
   return (
     <div>
@@ -2727,7 +2786,23 @@ function ExamsTab({ t, lessons, setLessons, students, classes, progress, setProg
                         {lessonTypeIcon("exam", 12)} {examFormatLabel(t, l.examFormat)}
                         {(!l.examFormat || l.examFormat === "builder") && ` · ${t.questionsCount((l.questions || []).length)}`}
                       </div>
-                      <div style={{ color: COLORS.chalk, fontWeight: 700 }}>{l.title}</div>
+                      <div style={{ color: COLORS.chalk, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                        {l.title}
+                        {!isFileExam(l) && pendingCountFor(l.id) > 0 && (
+                          <span
+                            style={{
+                              background: COLORS.chalkPink,
+                              color: "#fff",
+                              borderRadius: 999,
+                              padding: "1px 9px",
+                              fontSize: 12,
+                              fontWeight: 800,
+                            }}
+                          >
+                            {pendingCountFor(l.id)}
+                          </span>
+                        )}
+                      </div>
                       {l.desc && <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{l.desc}</div>}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
