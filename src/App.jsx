@@ -1586,8 +1586,8 @@ function ClassesTab({ t, lang, classes, setClasses, students, lessons, onOpenLes
   );
 }
 
-function PendingStudentRow({ t, s, classNameFor, onApprove, onReject }) {
-  const [username, setUsername] = useState((s.email || s.phone || "").split("@")[0] || "");
+function PendingStudentRow({ t, s, classNameFor, onApprove, onReject, students }) {
+  const [username, setUsername] = useState(() => genUsername(s.name, students));
   const [password, setPassword] = useState(genPassword());
 
   return (
@@ -1786,7 +1786,7 @@ function StudentsTab({ t, students, setStudents, classes }) {
           <div style={{ color: COLORS.chalkYellow, fontWeight: 800, fontSize: 16, marginBottom: 8 }}>{t.pendingApprovalTitle(pending.length)}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {pending.map((s) => (
-              <PendingStudentRow key={s.id} t={t} s={s} classNameFor={classNameFor} onApprove={approvePending} onReject={remove} />
+              <PendingStudentRow key={s.id} t={t} s={s} classNameFor={classNameFor} onApprove={approvePending} onReject={remove} students={students} />
             ))}
           </div>
         </div>
