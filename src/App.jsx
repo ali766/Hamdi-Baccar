@@ -35,10 +35,11 @@ function toEmbedUrl(url, opts = {}) {
   if (/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url) || /\/video\/upload\//.test(url)) {
     return { type: "file-video", src: url };
   }
-  // ملف PDF مباشر: يتعرض جوه الصفحة زي أي PDF من المتصفح. #toolbar=0 بيخفي شريط
-  // أدوات الـ PDF (وبالتالي زرار التحميل/الطباعة) لما المدرس يكون مسكّر الداونلود.
+  // ملف PDF مباشر: بيتعرض عن طريق Google Docs Viewer بدل عارض المتصفح نفسه، لأن عارض
+  // المتصفح (خصوصًا على الموبايل) بيفتح الصفحة بحجمها الطبيعي (100%) جوه الإطار الصغير
+  // فيبان "مكبّر جدًا"، بينما Google Viewer بيتصرف كصفحة ويب عادية بتتظبط تلقائي مع عرض الشاشة.
   if (/\.pdf(\?.*)?$/i.test(url) || /\/(image|raw)\/upload\/[^]*\.pdf/i.test(url)) {
-    return { type: "frame", src: opts.allowDownload ? url : `${url}#toolbar=0` };
+    return { type: "frame", src: `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(url)}` };
   }
   // PowerPoint / Word: تتعرض جوه الصفحة عن طريق Office Online Viewer (لازم الرابط يكون عام/متاح على النت)
   if (/\.(ppt|pptx|doc|docx)(\?.*)?$/i.test(url)) {
