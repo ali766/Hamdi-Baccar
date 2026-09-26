@@ -785,7 +785,7 @@ function Board({ lang, children }) {
       `}</style>
       <div
         style={{
-          maxWidth: 960,
+          maxWidth: 1400,
           margin: "0 auto",
           border: `2px solid ${COLORS.frame}`,
           borderRadius: 24,
@@ -1060,7 +1060,7 @@ function AdminDashboard({ back, students, setStudents, lessons, setLessons, clas
         <nav className="admin-sidebar">{renderNavButtons()}</nav>
         <div className="admin-content">
           {tab === "dashboard" && <DashboardTab t={t} lang={lang} students={students} lessons={lessons} progress={progress} goTo={setTab} />}
-          {tab === "classes" && <ClassesTab t={t} classes={classes} setClasses={setClasses} students={students} lessons={lessons} onOpenLesson={openLessonEditor} onOpenExam={openExamEditor} />}
+          {tab === "classes" && <ClassesTab t={t} lang={lang} classes={classes} setClasses={setClasses} students={students} lessons={lessons} onOpenLesson={openLessonEditor} onOpenExam={openExamEditor} />}
           {tab === "students" && <StudentsTab t={t} students={students} setStudents={setStudents} classes={classes} />}
           {tab === "lessons" && <LessonsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} externalEditId={pendingEditLessonId} onExternalEditHandled={() => setPendingEditLessonId(null)} />}
           {tab === "exams" && <ExamsTab t={t} lessons={lessons} setLessons={setLessons} students={students} classes={classes} externalEditId={pendingEditExamId} onExternalEditHandled={() => setPendingEditExamId(null)} />}
@@ -1215,9 +1215,134 @@ function SettingsTab({ t, adminPass, setAdminPass }) {
   );
 }
 
-function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, onOpenExam }) {
+function ClassDetailView({ t, lang, cls, students, lessons, onOpenLesson, onOpenExam, onBack }) {
+  const [tab, setTab] = useState("students");
+  const classStudents = students.filter((s) => s.classId === cls.id && s.status !== "pending");
+  const classLessons = (lessons || []).filter((l) => l.type !== "exam" && lessonAssignedToClass(l, cls.id));
+  const classExams = (lessons || []).filter((l) => l.type === "exam" && lessonAssignedToClass(l, cls.id));
+
+  const subTabs = [
+    { id: "students", label: t.classStudentsTitle, icon: <Users size={15} />, count: classStudents.length },
+    { id: "lessons", label: t.classLessonsTitle, icon: <BookOpen size={15} />, count: classLessons.length },
+    { id: "exams", label: t.classExamsTitle, icon: <ListChecks size={15} />, count: classExams.length },
+  ];
+
+  return (
+    <div>
+      <button
+        onClick={onBack}
+        style={{ background: "none", border: "none", color: COLORS.chalkDim, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 15, marginBottom: 16, padding: 0 }}
+      >
+        <ArrowRight size={16} style={{ transform: lang === "en" || lang === "fr" ? "scaleX(-1)" : "none" }} /> {t.tabClasses}
+      </button>
+
+      <div
+        style={{
+          border: `1px solid rgba(201,162,39,0.3)`,
+          borderRadius: 18,
+          padding: "18px 20px",
+          background: "linear-gradient(135deg, rgba(232,180,75,0.08), rgba(255,255,255,0.02))",
+          marginBottom: 18,
+        }}
+      >
+        <div style={{ width: 42, height: 4, borderRadius: 4, background: COLORS.chalkYellow, marginBottom: 12 }} />
+        <div style={{ color: COLORS.chalk, fontWeight: 800, fontSize: 22 }}>{cls.name}</div>
+        <div style={{ color: COLORS.chalkDim, fontSize: 14, marginTop: 4 }}>{t.studentsInClass(classStudents.length)}</div>
+      </div>
+
+      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 20 }}>
+        <StatCard icon={<Users size={18} />} value={classStudents.length} label={t.classStudentsTitle} color={COLORS.chalkBlue} />
+        <StatCard icon={<BookOpen size={18} />} value={classLessons.length} label={t.classLessonsTitle} color={COLORS.chalkYellow} />
+        <StatCard icon={<ListChecks size={18} />} value={classExams.length} label={t.classExamsTitle} color={COLORS.chalkPink} />
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+        {subTabs.map((st) => (
+          <button
+            key={st.id}
+            onClick={() => setTab(st.id)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: tab === st.id ? "rgba(232,180,75,0.16)" : "rgba(255,255,255,0.03)",
+              border: tab === st.id ? `1px solid rgba(201,162,39,0.5)` : `1px solid rgba(201,162,39,0.15)`,
+              color: tab === st.id ? COLORS.chalkYellow : COLORS.chalkDim,
+              borderRadius: 999,
+              padding: "9px 16px",
+              fontFamily: "Cairo, sans-serif",
+              fontWeight: 700,
+              fontSize: 14.5,
+              cursor: "pointer",
+            }}
+          >
+            {st.icon} {st.label} <span style={{ opacity: 0.7 }}>({st.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {tab === "students" &&
+        (classStudents.length === 0 ? (
+          <EmptyNote text={t.noneAddedYet} icon={<Users size={22} />} />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {classStudents.map((s) => (
+              <div key={s.id} style={rowStyle}>
+                <span style={{ color: COLORS.chalk, fontWeight: 700 }}>{s.name}</span>
+                {s.status === "blocked" && (
+                  <span style={{ border: `1px solid ${COLORS.chalkPink}`, color: COLORS.chalkPink, borderRadius: 20, padding: "1px 10px", fontSize: 12, fontWeight: 700 }}>
+                    {t.blockedLabel}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+
+      {tab === "lessons" &&
+        (classLessons.length === 0 ? (
+          <EmptyNote text={t.noneAddedYet} icon={<BookOpen size={22} />} />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {classLessons.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => onOpenLesson && onOpenLesson(l.id)}
+                style={{ ...rowStyle, cursor: "pointer", border: "1px solid rgba(201,162,39,0.2)", width: "100%", textAlign: "start", fontFamily: "Cairo, sans-serif" }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalk, fontWeight: 700 }}>
+                  {lessonTypeIcon(l.type, 15)} {l.title}
+                </span>
+              </button>
+            ))}
+          </div>
+        ))}
+
+      {tab === "exams" &&
+        (classExams.length === 0 ? (
+          <EmptyNote text={t.noneAddedYet} icon={<ListChecks size={22} />} />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {classExams.map((l) => (
+              <button
+                key={l.id}
+                onClick={() => onOpenExam && onOpenExam(l.id)}
+                style={{ ...rowStyle, cursor: "pointer", border: "1px solid rgba(201,162,39,0.2)", width: "100%", textAlign: "start", fontFamily: "Cairo, sans-serif" }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8, color: COLORS.chalk, fontWeight: 700 }}>
+                  {lessonTypeIcon("exam", 15)} {l.title}
+                </span>
+              </button>
+            ))}
+          </div>
+        ))}
+    </div>
+  );
+}
+
+function ClassesTab({ t, lang, classes, setClasses, students, lessons, onOpenLesson, onOpenExam }) {
   const [name, setName] = useState("");
-  const [openId, setOpenId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
 
   const add = (e) => {
     e.preventDefault();
@@ -1230,6 +1355,22 @@ function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, o
     setClasses(classes.filter((c) => c.id !== id));
   };
   const countFor = (classId) => students.filter((s) => s.classId === classId).length;
+
+  const selected = selectedId ? classes.find((c) => c.id === selectedId) : null;
+  if (selected) {
+    return (
+      <ClassDetailView
+        t={t}
+        lang={lang}
+        cls={selected}
+        students={students}
+        lessons={lessons}
+        onOpenLesson={onOpenLesson}
+        onOpenExam={onOpenExam}
+        onBack={() => setSelectedId(null)}
+      />
+    );
+  }
 
   return (
     <div>
@@ -1246,87 +1387,19 @@ function ClassesTab({ t, classes, setClasses, students, lessons, onOpenLesson, o
         <EmptyNote text={t.noClasses} icon={<GraduationCap size={22} />} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {classes.map((c) => {
-            const isOpen = openId === c.id;
-            const classStudents = students.filter((s) => s.classId === c.id && s.status !== "pending");
-            const classLessons = (lessons || []).filter((l) => l.type !== "exam" && lessonAssignedToClass(l, c.id));
-            const classExams = (lessons || []).filter((l) => l.type === "exam" && lessonAssignedToClass(l, c.id));
-            return (
-              <div key={c.id} style={{ ...rowStyle, flexDirection: "column", alignItems: "stretch", gap: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }} onClick={() => setOpenId(isOpen ? null : c.id)}>
-                  <div>
-                    <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{c.name}</div>
-                    <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.studentsInClass(countFor(c.id))}</div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} style={iconBtnStyle}>
-                      <Trash2 size={16} color={COLORS.chalkPink} />
-                    </button>
-                  </div>
-                </div>
-                {isOpen && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 14, borderTop: `1px dashed rgba(201,162,39,0.3)`, paddingTop: 12 }}>
-                    {classStudents.length === 0 && classLessons.length === 0 && classExams.length === 0 && (
-                      <div style={{ color: COLORS.chalkDim, fontSize: 13.5 }}>{t.noneAddedYet}</div>
-                    )}
-
-                    {classStudents.length > 0 && (
-                      <div>
-                        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                          <Users size={13} /> {t.classStudentsTitle}
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {classStudents.map((s) => (
-                            <div key={s.id} style={{ color: COLORS.chalk, fontSize: 14 }}>
-                              {s.name} {s.status === "blocked" && <span style={{ color: COLORS.chalkPink, fontSize: 12 }}>· {t.blockedLabel}</span>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {classLessons.length > 0 && (
-                      <div>
-                        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                          <BookOpen size={13} /> {t.classLessonsTitle}
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {classLessons.map((l) => (
-                            <button
-                              key={l.id}
-                              onClick={() => onOpenLesson && onOpenLesson(l.id)}
-                              style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: COLORS.chalkYellow, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 14, padding: "2px 0", textAlign: "start" }}
-                            >
-                              {lessonTypeIcon(l.type, 13)} {l.title}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {classExams.length > 0 && (
-                      <div>
-                        <div style={{ color: COLORS.chalkBlue, fontWeight: 700, fontSize: 13.5, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                          <ListChecks size={13} /> {t.classExamsTitle}
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {classExams.map((l) => (
-                            <button
-                              key={l.id}
-                              onClick={() => onOpenExam && onOpenExam(l.id)}
-                              style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: COLORS.chalkYellow, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 14, padding: "2px 0", textAlign: "start" }}
-                            >
-                              {lessonTypeIcon("exam", 13)} {l.title}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+          {classes.map((c) => (
+            <div key={c.id} style={{ ...rowStyle, cursor: "pointer" }} onClick={() => setSelectedId(c.id)}>
+              <div>
+                <div style={{ color: COLORS.chalk, fontWeight: 700, fontSize: 16 }}>{c.name}</div>
+                <div style={{ color: COLORS.chalkDim, fontSize: 14 }}>{t.studentsInClass(countFor(c.id))}</div>
               </div>
-            );
-          })}
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <button onClick={(e) => { e.stopPropagation(); remove(c.id); }} style={iconBtnStyle}>
+                  <Trash2 size={16} color={COLORS.chalkPink} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
