@@ -59,7 +59,7 @@ function LessonEmbed({ lesson }) {
         controlsList={lesson.allowDownload ? "noremoteplayback" : "nodownload noremoteplayback"}
         disablePictureInPicture
         onContextMenu={(e) => !lesson.allowDownload && e.preventDefault()}
-        style={{ width: "100%", maxWidth: 480, borderRadius: 8, background: "#000" }}
+        style={{ width: "100%", maxWidth: 900, borderRadius: 8, background: "#000" }}
       />
     );
   }
@@ -69,7 +69,7 @@ function LessonEmbed({ lesson }) {
       title={lesson.title}
       allow="autoplay; encrypted-media; fullscreen"
       allowFullScreen
-      style={{ width: "100%", maxWidth: 480, aspectRatio: lesson.type === "video" ? "16/9" : "3/4", border: "none", borderRadius: 8 }}
+      style={{ width: "100%", maxWidth: 900, aspectRatio: lesson.type === "video" ? "16/9" : "3/4", border: "none", borderRadius: 8 }}
     />
   );
 }
@@ -3018,9 +3018,70 @@ function StudentSettingsTab({ t, student, students, setStudents }) {
   );
 }
 
+function QuickTile({ icon, label, count, color, onClick }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 16,
+        padding: "22px 20px",
+        borderRadius: 18,
+        border: `1px solid ${color}55`,
+        background: hover ? `${color}22` : `${color}12`,
+        cursor: "pointer",
+        textAlign: "start",
+        fontFamily: "Cairo, sans-serif",
+        transition: "background 0.15s ease, transform 0.15s ease",
+        transform: hover ? "translateY(-2px)" : "translateY(0)",
+        flex: "1 1 200px",
+        minWidth: 180,
+      }}
+    >
+      <span
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          background: `${color}25`,
+          border: `1px solid ${color}55`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color,
+        }}
+      >
+        {icon}
+      </span>
+      <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+        <span style={{ color: COLORS.chalk, fontWeight: 800, fontSize: 17 }}>{label}</span>
+        {count != null && <span style={{ color, fontWeight: 800, fontSize: 20 }}>{count}</span>}
+      </span>
+    </button>
+  );
+}
+
+function BackRow({ onBack, label, lang }) {
+  return (
+    <button
+      onClick={onBack}
+      style={{ background: "none", border: "none", color: COLORS.chalkDim, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontFamily: "Cairo, sans-serif", fontSize: 15, marginBottom: 18, padding: 0 }}
+    >
+      <ArrowRight size={16} style={{ transform: lang === "en" || lang === "fr" ? "scaleX(-1)" : "none" }} /> {label}
+    </button>
+  );
+}
+
 function StudentDashboard({ back, student, students, setStudents, lessons, progress, setProgress, lang, setLang }) {
   const t = T[lang];
-  const [tab, setTab] = useState("lessons");
+  const [view, setView] = useState("home");
+  const [activeLessonId, setActiveLessonId] = useState(null);
+  const [activeExamId, setActiveExamId] = useState(null);
   const visibleLessons = useMemo(
     () => lessons.filter((l) => lessonVisibleToStudent(l, student)),
     [lessons, student.id]
@@ -3134,66 +3195,105 @@ function StudentDashboard({ back, student, students, setStudents, lessons, progr
     );
   };
 
-  const renderGrouped = (grouped, emptyText) => {
-    if (Object.keys(grouped).length === 0) return <EmptyNote text={emptyText} />;
+  const renderTitleRow = (l, onOpen) => {
+    const entry = (progress[student.id] && progress[student.id][l.id]) || null;
+    const watched = entry && entry.watched;
+    return (
+      <button
+        key={l.id}
+        onClick={() => onOpen(l.id)}
+        style={{ ...rowStyle, cursor: "pointer", width: "100%", textAlign: "start", fontFamily: "Cairo, sans-serif" }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {watched ? <CheckCircle2 size={18} color={COLORS.chalkBlue} /> : <Circle size={18} color={COLORS.chalkDim} />}
+          {lessonTypeIcon(l.type, 16)}
+          <span style={{ color: COLORS.chalk, fontWeight: 700, textDecoration: watched ? "line-through" : "none", opacity: watched ? 0.75 : 1 }}>{l.title}</span>
+        </span>
+        <ArrowRight size={16} color={COLORS.chalkDim} style={{ transform: lang === "ar" ? "scaleX(-1)" : "none" }} />
+      </button>
+    );
+  };
+
+  const renderGroupedTitles = (grouped, emptyText, onOpen, emptyIcon) => {
+    if (Object.keys(grouped).length === 0) return <EmptyNote text={emptyText} icon={emptyIcon} />;
     return Object.entries(grouped).map(([cat, items]) => (
       <div key={cat} style={{ marginBottom: 22 }}>
         <div style={{ color: COLORS.chalkBlue, fontWeight: 800, fontSize: 17, marginBottom: 8 }}>{cat}</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((l) => renderItem(l))}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{items.map((l) => renderTitleRow(l, onOpen))}</div>
       </div>
     ));
   };
 
-  const studentTabs = [
-    { id: "lessons", label: t.tabLessons, icon: <BookOpen size={15} /> },
-    { id: "exams", label: t.tabExams, icon: <ListChecks size={15} /> },
-    { id: "settings", label: t.tabSettings, icon: <Settings size={15} /> },
-  ];
+  const openLesson = (id) => { setActiveLessonId(id); setView("lessonDetail"); };
+  const openExam = (id) => { setActiveExamId(id); setView("examDetail"); };
+  const activeLesson = activeLessonId ? lessonItems.find((l) => l.id === activeLessonId) : null;
+  const activeExam = activeExamId ? examItems.find((l) => l.id === activeExamId) : null;
 
   return (
     <Board lang={lang}>
       <TopBar back={back} label={t.logout} lang={lang} setLang={setLang} />
       <Title lang={lang} sub={t.welcome(student.name)}>{t.brand}</Title>
 
-      <div style={{ maxWidth: 500, margin: "0 auto 20px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, color: COLORS.chalkDim, marginBottom: 6 }}>
-          <span>{t.completed(stats.done, stats.total)}</span>
-          <span>{stats.pct}%</span>
-        </div>
-        <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-          <div style={{ width: `${stats.pct}%`, height: "100%", background: COLORS.chalkYellow, transition: "width 0.3s ease" }} />
-        </div>
-      </div>
+      {view === "home" && (
+        <div>
+          <div style={{ maxWidth: 560, margin: "0 auto 28px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 15, color: COLORS.chalkDim, marginBottom: 6 }}>
+              <span>{t.completed(stats.done, stats.total)}</span>
+              <span>{stats.pct}%</span>
+            </div>
+            <div style={{ width: "100%", height: 8, borderRadius: 6, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+              <div style={{ width: `${stats.pct}%`, height: "100%", background: COLORS.chalkYellow, transition: "width 0.3s ease" }} />
+            </div>
+          </div>
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", marginBottom: 22 }}>
-        {studentTabs.map((tb) => (
-          <button
-            key={tb.id}
-            type="button"
-            onClick={() => setTab(tb.id)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "8px 16px",
-              borderRadius: 20,
-              border: `1.5px solid ${tab === tb.id ? COLORS.chalkYellow : "rgba(201,162,39,0.3)"}`,
-              background: tab === tb.id ? "rgba(201,162,39,0.14)" : "transparent",
-              color: tab === tb.id ? COLORS.chalkYellow : COLORS.chalkDim,
-              cursor: "pointer",
-              fontFamily: "Cairo, sans-serif",
-              fontWeight: 700,
-              fontSize: 14.5,
-            }}
-          >
-            {tb.icon} {tb.label}
-          </button>
-        ))}
-      </div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 26, justifyContent: "center" }}>
+            <StatCard icon={<BookOpen size={18} />} value={lessonItems.length} label={t.tabLessons} color={COLORS.chalkYellow} />
+            <StatCard icon={<ListChecks size={18} />} value={examItems.length} label={t.tabExams} color={COLORS.chalkBlue} />
+            <StatCard icon={<TrendingUp size={18} />} value={`${stats.pct}%`} label={t.dashAvgProgress} color={COLORS.chalkPink} />
+          </div>
 
-      {tab === "lessons" && renderGrouped(groupedLessons, t.noLessonsYet)}
-      {tab === "exams" && renderGrouped(groupedExams, t.noExams)}
-      {tab === "settings" && <StudentSettingsTab t={t} student={student} students={students} setStudents={setStudents} />}
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <QuickTile icon={<BookOpen size={20} />} label={t.tabLessons} count={lessonItems.length} color={COLORS.chalkYellow} onClick={() => setView("lessons")} />
+            <QuickTile icon={<ListChecks size={20} />} label={t.tabExams} count={examItems.length} color={COLORS.chalkBlue} onClick={() => setView("exams")} />
+            <QuickTile icon={<Settings size={20} />} label={t.tabSettings} color={COLORS.chalkPink} onClick={() => setView("settings")} />
+          </div>
+        </div>
+      )}
+
+      {view === "lessons" && (
+        <div>
+          <BackRow onBack={() => setView("home")} label={t.tabLessons} lang={lang} />
+          {renderGroupedTitles(groupedLessons, t.noLessonsYet, openLesson, <BookOpen size={22} />)}
+        </div>
+      )}
+
+      {view === "lessonDetail" && activeLesson && (
+        <div>
+          <BackRow onBack={() => setView("lessons")} label={t.tabLessons} lang={lang} />
+          {renderItem(activeLesson)}
+        </div>
+      )}
+
+      {view === "exams" && (
+        <div>
+          <BackRow onBack={() => setView("home")} label={t.tabExams} lang={lang} />
+          {renderGroupedTitles(groupedExams, t.noExams, openExam, <ListChecks size={22} />)}
+        </div>
+      )}
+
+      {view === "examDetail" && activeExam && (
+        <div>
+          <BackRow onBack={() => setView("exams")} label={t.tabExams} lang={lang} />
+          {renderItem(activeExam)}
+        </div>
+      )}
+
+      {view === "settings" && (
+        <div>
+          <BackRow onBack={() => setView("home")} label={t.tabSettings} lang={lang} />
+          <StudentSettingsTab t={t} student={student} students={students} setStudents={setStudents} />
+        </div>
+      )}
     </Board>
   );
 }
